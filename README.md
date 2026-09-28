@@ -1,0 +1,34 @@
+# Balistidae Quest 🐟
+
+A bright, cartoon-style iPad adventure game for 10–11 year olds, based on our
+Mozambique holiday. About 30 minutes to play through, in six chapters:
+
+1. **The Great Road Trip**: drive Ballito → Richards Bay → iSimangaliso → Kosi Bay border → Bela Vista → Katembe Bridge → Maputo on a live map, with maths at every stop.
+2. **A Night in Maputo**: the night at the Sun International hotel, with a memory-match game, a safe-code puzzle and a Maputo quiz.
+3. **Boat to Balistidae**: steer *Titan* across Maputo Bay by solving buoy clues.
+4. **Hell's Gate Fishing**: time the waves through Hell's Gate, watch Lee's wahoo get away, then reel in the big yellowfin tuna.
+5. **Mud Island**: find the hidden creatures and beat the tide.
+6. **The Treasure Hunt**: riddles around the lodge unlock the 4-digit chest code.
+
+Trig the Triggerfish (the Balistidae family!) guides the players. Players collect 🐚 shells and passport stamps, and finish with a certificate.
+
+## Playing on the iPad
+
+It's a single web page (`index.html`) with no build step and no install.
+
+1. Host the folder anywhere (or open the private Artifact link).
+2. Open it in Safari → Share → **Add to Home Screen**. It then launches full-screen like an app.
+
+Progress is saved on the device. 🗣️ in the top bar turns on read-aloud.
+
+## Family photos
+
+The kids' avatars and family photos are **not** committed (see `.gitignore`)
+because this repository is public. The game works without them and shows
+cartoon placeholders instead. To add them, drop the files into `assets/`:
+
+`kid-kayden.png`, `kid-oliver.png`, `kid-blake.png`, `kid-tayla.png`,
+`kid-gabbie.png`, `oliver-fishing.jpg`, `oliver-tuna.jpg`, `boat-ride.jpg`,
+`girls-boat.jpg`, `crew-maputo.jpg`
+
+Names, the boat, skipper and chef are set in the `FAMILY` block at the top of the script in `index.html`.

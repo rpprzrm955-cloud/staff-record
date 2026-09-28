@@ -1,0 +1,1325 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Balistidae Quest">
+<meta name="theme-color" content="#12b5e5">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<link rel="icon" href="assets/icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Balistidae Quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sky:#8ee6ff; --sky2:#d6f7ff;
+  --sea:#12b5e5; --sea2:#0a78c2; --deep:#07457e;
+  --sand:#ffe39a; --sand2:#f5c65b;
+  --sun:#ffd21f; --coral:#ff6b6b; --pink:#ff8fc7; --leaf:#2ec46d; --leaf2:#1a9b52;
+  --orange:#ff9f1c; --purple:#8e6bff;
+  --ink:#16324f; --card:#ffffff; --card2:#fff8e3;
+  --bg:#bdf0ff; --shadow:rgba(10,40,80,.28);
+  --r:26px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --bg:#0d3b63; --sky:#1d5f94; --sky2:#2a78b0; }
+}
+:root[data-theme="dark"]{ --bg:#0d3b63; --sky:#1d5f94; --sky2:#2a78b0; }
+
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{margin:0; height:100%; overflow:hidden; overscroll-behavior:none;}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"Fredoka", ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", system-ui, sans-serif;
+  -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;
+  touch-action:manipulation;
+}
+input{ -webkit-user-select:text; user-select:text; font-family:inherit; }
+button{font-family:inherit; color:inherit;}
+
+#app{position:fixed; inset:0; display:flex; flex-direction:column;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
+#bar{height:64px; flex:none; display:flex; align-items:center; gap:10px; padding:0 14px;
+  background:linear-gradient(180deg,#19c2f0,#0b93d6); color:#fff; box-shadow:0 4px 0 rgba(0,0,0,.15); z-index:5;}
+#bar .ttl{flex:1; font-weight:700; font-size:clamp(17px,2.6vw,26px); text-shadow:0 2px 0 rgba(0,0,0,.25); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.ibtn{width:48px; height:48px; border-radius:16px; border:0; font-size:24px; background:rgba(255,255,255,.22); color:#fff; cursor:pointer; flex:none;}
+.ibtn:active{transform:scale(.92);}
+.ibtn.off{opacity:.45;}
+#shells{background:#fff; color:var(--ink); border-radius:20px; padding:6px 14px; font-weight:700; font-size:20px; box-shadow:0 3px 0 rgba(0,0,0,.18); flex:none;}
+#shells.pop{animation:pop .5s;}
+#stage{position:relative; flex:1; overflow:hidden;}
+
+/* ---------- common ---------- */
+.full{position:absolute; inset:0;}
+.center{display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;}
+.btn{border:0; border-radius:22px; padding:14px 26px; font-size:clamp(18px,2.4vw,24px); font-weight:700; cursor:pointer;
+  background:var(--sun); color:var(--ink); box-shadow:0 6px 0 #d9a300, 0 10px 18px var(--shadow); transition:transform .08s;}
+.btn:active{transform:translateY(4px); box-shadow:0 2px 0 #d9a300;}
+.btn.blue{background:#35c3ff; color:#fff; box-shadow:0 6px 0 #1283c4, 0 10px 18px var(--shadow);}
+.btn.green{background:var(--leaf); color:#fff; box-shadow:0 6px 0 var(--leaf2), 0 10px 18px var(--shadow);}
+.btn.coral{background:var(--coral); color:#fff; box-shadow:0 6px 0 #c94444, 0 10px 18px var(--shadow);}
+.btn.small{font-size:16px; padding:10px 16px;}
+.btn:disabled{opacity:.45;}
+.panel{background:var(--card); border:4px solid var(--ink); border-radius:var(--r); box-shadow:0 10px 0 rgba(22,50,79,.25); padding:22px;}
+.overlay{position:absolute; inset:0; background:rgba(8,40,70,.45); display:flex; align-items:center; justify-content:center; padding:16px; z-index:20; animation:fade .25s;}
+.toast{position:absolute; left:50%; top:14px; transform:translateX(-50%); background:#fff; border:3px solid var(--ink); border-radius:18px; padding:10px 18px; font-size:clamp(15px,2vw,20px); font-weight:600; z-index:30; max-width:92%; box-shadow:0 6px 0 rgba(0,0,0,.15); animation:drop .35s;}
+.shake{animation:shake .45s;}
+.pop-in{animation:popin .35s cubic-bezier(.2,1.6,.4,1);}
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.35)}100%{transform:scale(1)}}
+@keyframes popin{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes drop{from{transform:translate(-50%,-30px);opacity:0}to{transform:translate(-50%,0);opacity:1}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-14px)}40%{transform:translateX(12px)}60%{transform:translateX(-8px)}80%{transform:translateX(5px)}}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-10px) rotate(2deg)}}
+@keyframes swim{0%,100%{transform:translateX(0)}50%{transform:translateX(12px)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
+@keyframes wave{from{background-position-x:0}to{background-position-x:200px}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.bob{animation:bob 3s ease-in-out infinite;}
+.pulse{animation:pulse 1s ease-in-out infinite;}
+
+/* sea background with waves */
+.seabg{background:linear-gradient(180deg,var(--sky) 0%,var(--sky2) 30%,var(--sea) 30%,var(--sea2) 100%);}
+.waves{position:absolute; left:0; right:0; height:40px;
+  background:radial-gradient(circle at 25px -8px, transparent 26px, rgba(255,255,255,.55) 27px, transparent 31px) 0 0/50px 40px repeat-x;
+  animation:wave 6s linear infinite;}
+
+/* ---------- title ---------- */
+.title-scene{background:linear-gradient(180deg,#7fe0ff 0%,#c9f5ff 45%,#19b8e8 45%,#0a78c2 100%); overflow:hidden;}
+.sunball{position:absolute; right:7%; top:6%; width:120px; height:120px; border-radius:50%; background:radial-gradient(circle,#fff6a8,#ffd21f 60%,#ffb300); box-shadow:0 0 60px #ffe45c;}
+.logo-wrap{position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; gap:6px;}
+.logo-img{max-width:min(420px,70vw); max-height:24vh; filter:drop-shadow(0 6px 0 rgba(0,0,0,.18)); background:#fff; border-radius:24px; padding:10px 18px; border:4px solid var(--ink);}
+.big-title{font-size:clamp(40px,8vw,88px); font-weight:700; line-height:.95; color:#fff; margin:0;
+  text-shadow:0 5px 0 var(--ink), 0 -3px 0 var(--ink), 3px 0 0 var(--ink), -3px 0 0 var(--ink), 0 12px 20px rgba(0,0,0,.25);}
+.sub-title{font-size:clamp(18px,3vw,30px); font-weight:600; color:var(--ink); background:var(--sun); padding:6px 18px; border-radius:18px; border:3px solid var(--ink); transform:rotate(-2deg);}
+.title-fish{position:absolute; width:clamp(120px,20vw,220px);}
+.row{display:flex; gap:16px; flex-wrap:wrap; justify-content:center;}
+
+/* ---------- talk / story ---------- */
+.talk{display:flex; align-items:flex-end; gap:14px; width:min(860px,100%);}
+.talker{width:clamp(110px,18vw,180px); flex:none; animation:bob 3s ease-in-out infinite;}
+.talker svg{width:100%; height:auto; display:block;}
+.bubble{position:relative; flex:1; background:#fff; border:4px solid var(--ink); border-radius:28px; padding:20px 22px 18px; font-size:clamp(19px,2.5vw,27px); line-height:1.35; box-shadow:0 8px 0 rgba(22,50,79,.25); animation:popin .3s;}
+.bubble:before{content:""; position:absolute; left:-22px; bottom:30px; border:12px solid transparent; border-right:14px solid var(--ink);}
+.bubble .who{font-size:.7em; font-weight:700; color:var(--sea2); text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;}
+.bubble .actions{display:flex; justify-content:flex-end; margin-top:14px;}
+.photo{display:block; margin:0 auto 12px; max-width:100%; max-height:28vh; border:8px solid #fff; border-bottom-width:26px; box-shadow:0 8px 18px rgba(0,0,0,.3); transform:rotate(-2deg); border-radius:4px;}
+b.hl{color:var(--coral);}
+
+/* ---------- quiz ---------- */
+.quiz{width:min(640px,100%); max-height:100%; overflow:auto; text-align:center;}
+.qtag{display:inline-block; background:var(--purple); color:#fff; font-weight:700; border-radius:14px; padding:4px 14px; font-size:16px;}
+.qtext{font-size:clamp(20px,2.8vw,28px); margin:12px 0; line-height:1.3;}
+.qtext ul{text-align:left; margin:8px auto; padding-left:26px; max-width:520px;}
+.qhint{min-height:28px; color:#c94444; font-weight:600; font-size:clamp(16px,2vw,20px);}
+.qart{font-size:56px; line-height:1;}
+.qart svg{max-height:110px; width:auto;}
+.opts{display:grid; gap:14px; margin-top:8px;}
+.opt{background:#e9f8ff; color:var(--ink); box-shadow:0 6px 0 #9fd3ea; border:3px solid var(--ink);}
+.opt.right{background:var(--leaf); color:#fff;}
+.opt.wrong{background:#ffd0d0; text-decoration:line-through;}
+.display{font-size:44px; font-weight:700; background:var(--card2); border:4px solid var(--ink); border-radius:18px; min-height:70px; display:flex; align-items:center; justify-content:center; gap:8px; margin:8px auto; max-width:320px;}
+.display .unit{font-size:22px; opacity:.7;}
+.pad{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; max-width:320px; margin:10px auto 0;}
+.key{height:62px; border-radius:18px; border:3px solid var(--ink); background:#fff; font-size:28px; font-weight:700; box-shadow:0 5px 0 #c5d6e3; cursor:pointer;}
+.key:active{transform:translateY(3px); box-shadow:0 2px 0 #c5d6e3;}
+.key.ok{background:var(--leaf); color:#fff;}
+.yay{font-size:clamp(34px,5vw,54px); font-weight:700; color:var(--leaf2);}
+.pts{font-size:26px; font-weight:700; margin:4px 0 10px;}
+.fact{background:#fff6cf; border:3px dashed var(--orange); border-radius:18px; padding:12px 16px; font-size:clamp(17px,2.2vw,22px); line-height:1.35; margin:8px 0 18px; text-align:left;}
+
+/* ---------- journey map ---------- */
+.journey{background:linear-gradient(180deg,#7fe0ff,#1fb8e8 60%,#0b86cc);}
+.jnode{position:absolute; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; gap:4px; border:0; background:none; cursor:pointer; padding:0;}
+.jnode .disc{width:clamp(76px,11vw,112px); height:clamp(76px,11vw,112px); border-radius:50%; background:#fff; border:5px solid var(--ink); display:flex; align-items:center; justify-content:center; font-size:clamp(36px,5.6vw,58px); box-shadow:0 7px 0 rgba(0,0,0,.2); position:relative;}
+.jnode .lbl{background:var(--ink); color:#fff; font-weight:600; border-radius:12px; padding:4px 10px; font-size:clamp(13px,1.7vw,18px); white-space:nowrap;}
+.jnode.locked .disc{filter:grayscale(1); opacity:.6;}
+.jnode.next .disc{animation:pulse 1.2s infinite; background:var(--sun);}
+.jnode .tick{position:absolute; right:-8px; top:-8px; width:36px; height:36px; border-radius:50%; background:var(--leaf); color:#fff; font-size:22px; display:flex; align-items:center; justify-content:center; border:3px solid #fff;}
+.jnode .num{position:absolute; left:-8px; top:-8px; width:32px; height:32px; border-radius:50%; background:var(--coral); color:#fff; font-size:18px; font-weight:700; display:flex; align-items:center; justify-content:center; border:3px solid #fff;}
+
+/* ---------- map chapters ---------- */
+.mapwrap{position:absolute; inset:0; display:flex; gap:14px; padding:14px; align-items:stretch;}
+.mapbox{flex:1.25; min-width:0; min-height:0; background:#fff; border:4px solid var(--ink); border-radius:var(--r); overflow:hidden; display:flex;}
+.mapbox svg{width:100%; height:100%; display:block;}
+.side{flex:1; min-width:0; display:flex; flex-direction:column; gap:14px; justify-content:center;}
+.side .panel{font-size:clamp(17px,2.2vw,23px); line-height:1.35;}
+.odo{display:inline-flex; gap:3px; background:#111; padding:5px 7px; border-radius:10px;}
+.odo span{background:#333; color:#fff; font-family:ui-monospace,Menlo,monospace; font-size:22px; padding:2px 5px; border-radius:4px;}
+@media (orientation:portrait){
+  .mapwrap{flex-direction:column;}
+  .mapbox{flex:1.4;}
+  .side{flex:none;}
+}
+.stamp{width:min(360px,80vw); aspect-ratio:1; border-radius:50%; border:10px double var(--coral); color:var(--coral); display:flex; flex-direction:column; align-items:center; justify-content:center; transform:rotate(-12deg); background:rgba(255,255,255,.95); animation:stampin .5s cubic-bezier(.2,1.6,.4,1); text-align:center; padding:20px;}
+.stamp .ic{font-size:80px;}
+.stamp .t{font-size:30px; font-weight:700; line-height:1.05;}
+@keyframes stampin{from{transform:rotate(-12deg) scale(2.5); opacity:0}to{transform:rotate(-12deg) scale(1); opacity:1}}
+
+/* ---------- memory ---------- */
+.mem-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:clamp(8px,1.5vw,16px); width:min(760px,94vw); max-height:72%; aspect-ratio:4/3.1;}
+@media (orientation:portrait){ .mem-grid{grid-template-columns:repeat(3,1fr); aspect-ratio:3/4.2; width:min(560px,90vw);} }
+.card{position:relative; perspective:600px; cursor:pointer; border:0; background:none; padding:0;}
+.card .in{position:absolute; inset:0; transition:transform .45s; transform-style:preserve-3d;}
+.card.flip .in{transform:rotateY(180deg);}
+.card .f,.card .b{position:absolute; inset:0; border-radius:18px; border:4px solid var(--ink); backface-visibility:hidden; -webkit-backface-visibility:hidden; display:flex; align-items:center; justify-content:center;}
+.card .f{background:repeating-linear-gradient(45deg,#19b8e8 0 14px,#35c9f5 14px 28px); font-size:clamp(28px,4vw,44px);}
+.card .b{background:#fff; transform:rotateY(180deg); font-size:clamp(40px,7vw,70px);}
+.card.done .b{background:#d9ffe7;}
+
+/* ---------- boat / buoys ---------- */
+.buoy{cursor:pointer;}
+.buoy text{font-family:inherit; font-weight:700;}
+
+/* ---------- fishing ---------- */
+.fishing{background:linear-gradient(180deg,#86e1ff 0%,#c8f4ff 22%,#1fb3e6 22%,#0a6db3 60%,#063f75 100%); overflow:hidden;}
+.fishing .boat{position:absolute; left:8%; top:calc(22% - 70px); width:clamp(160px,24vw,260px);}
+.fishing .fish{position:absolute; width:clamp(130px,20vw,230px); transition:left .2s, top .2s;}
+.fishing svg.line{position:absolute; inset:0; width:100%; height:100%; pointer-events:none;}
+.tmeter{position:absolute; right:3%; top:26%; bottom:22%; width:44px; border:4px solid var(--ink); border-radius:24px; overflow:hidden;
+  background:linear-gradient(0deg,#9fe7ff 0%,#9fe7ff 25%,#4fe08a 25%,#4fe08a 75%,#ffd21f 75%,#ffd21f 90%,#ff5252 90%);}
+.tmeter .nd{position:absolute; left:-4px; right:-4px; height:8px; background:var(--ink); border-radius:4px;}
+.tlabel{position:absolute; right:3%; top:calc(26% - 34px); width:90px; margin-right:-23px; text-align:center; font-weight:700; color:#fff; text-shadow:0 2px 0 var(--ink);}
+.pbar{position:absolute; left:4%; right:calc(3% + 70px); bottom:4%; height:30px; background:#fff; border:4px solid var(--ink); border-radius:16px; overflow:hidden;}
+.pbar .fill{height:100%; width:0; background:linear-gradient(90deg,var(--orange),var(--sun));}
+.pbar .lb{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:16px;}
+.reel{position:absolute; right:calc(3% + 64px); bottom:calc(4% + 44px); width:clamp(140px,20vw,190px); height:clamp(140px,20vw,190px); border-radius:50%; font-size:clamp(20px,2.6vw,26px);}
+.hint-top{position:absolute; left:50%; transform:translateX(-50%); top:calc(22% + 12px); background:rgba(255,255,255,.92); border:3px solid var(--ink); border-radius:18px; padding:8px 16px; font-weight:600; font-size:clamp(15px,2vw,20px); text-align:center; width:max-content; max-width:70%;}
+.gate-meter{position:absolute; left:10%; right:10%; bottom:18%; height:48px; background:#ff8a8a; border:4px solid var(--ink); border-radius:24px; overflow:hidden;}
+.gate-meter .zone{position:absolute; top:0; bottom:0; background:#4fe08a;}
+.gate-meter .needle{position:absolute; top:-4px; bottom:-4px; width:10px; margin-left:-5px; background:var(--ink); border-radius:5px;}
+.rock{position:absolute; font-size:clamp(50px,8vw,90px);}
+.gdots{position:absolute; left:50%; bottom:calc(18% + 60px); transform:translateX(-50%); font-size:34px; letter-spacing:8px;}
+
+/* ---------- mud island ---------- */
+.mud{background:
+  radial-gradient(ellipse 30% 10% at 30% 70%, rgba(120,190,230,.8) 60%, transparent 62%),
+  radial-gradient(ellipse 18% 7% at 70% 55%, rgba(120,190,230,.8) 60%, transparent 62%),
+  radial-gradient(ellipse 22% 8% at 55% 88%, rgba(120,190,230,.8) 60%, transparent 62%),
+  linear-gradient(180deg,#8fe3ff 0%,#c9f3ff 18%,#23b0e0 18%,#23b0e0 26%,#b88a5a 26%,#a0754a 100%);}
+.hid{position:absolute; border:0; background:none; font-size:clamp(30px,4.6vw,46px); padding:6px; cursor:pointer; transform:translate(-50%,-50%); opacity:.82; line-height:1;}
+.hid.found{opacity:1; animation:pop .5s; filter:drop-shadow(0 0 8px #fff);}
+.hid.found:after{content:"✔"; position:absolute; right:-6px; top:-8px; font-size:20px; background:var(--leaf); color:#fff; border-radius:50%; width:26px; height:26px; display:flex; align-items:center; justify-content:center;}
+.tray{position:absolute; left:50%; bottom:12px; transform:translateX(-50%); display:flex; gap:6px; background:rgba(255,255,255,.95); border:4px solid var(--ink); border-radius:22px; padding:6px 10px; z-index:5;}
+.tray span{font-size:clamp(24px,3.6vw,36px); filter:grayscale(1) opacity(.35); transition:.3s;}
+.tray span.got{filter:none;}
+.mangrove{position:absolute; font-size:clamp(60px,10vw,110px); line-height:1;}
+
+/* ---------- treasure ---------- */
+.parch{background:radial-gradient(circle at 50% 50%,#fff3c9,#f4d78c 70%,#d9b35e);}
+.tmap{position:absolute; inset:14px; border:6px dashed #8b5a2b; border-radius:30px;}
+.spot{position:absolute; transform:translate(-50%,-50%); border:0; background:none; display:flex; flex-direction:column; align-items:center; cursor:pointer; padding:0;}
+.spot .ic{font-size:clamp(44px,7vw,74px); line-height:1; filter:drop-shadow(0 4px 0 rgba(0,0,0,.2));}
+.spot .nm{background:#8b5a2b; color:#fff; border-radius:10px; padding:2px 10px; font-weight:600; font-size:clamp(13px,1.7vw,17px);}
+.spot.done .ic:after{content:"✔"; font-size:.4em; color:var(--leaf2);}
+.riddle{position:absolute; left:50%; top:24px; transform:translateX(-50%); width:min(640px,90%); background:#fffdf2; border:4px solid #8b5a2b; border-radius:22px; padding:12px 18px; font-size:clamp(17px,2.3vw,23px); text-align:center; z-index:4; box-shadow:0 6px 0 rgba(0,0,0,.15);}
+.codebox{position:absolute; right:24px; bottom:24px; display:flex; gap:8px; background:#fffdf2; border:4px solid #8b5a2b; border-radius:18px; padding:8px 12px; align-items:center; font-weight:700; z-index:4;}
+.codebox .d{width:44px; height:54px; border:3px solid var(--ink); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:30px; background:#fff;}
+.dials{display:flex; gap:12px; justify-content:center; margin:14px 0;}
+.dial{display:flex; flex-direction:column; align-items:center; gap:6px;}
+.dial .v{width:70px; height:84px; background:#fff; border:4px solid var(--ink); border-radius:14px; font-size:52px; font-weight:700; display:flex; align-items:center; justify-content:center;}
+.dial button{width:70px; height:50px; font-size:26px; border-radius:14px; border:3px solid var(--ink); background:var(--sun); cursor:pointer;}
+.chest-lid{transform-origin:20px 60px; transition:transform .8s cubic-bezier(.3,1.6,.5,1);}
+.chest.open .chest-lid{transform:rotate(-38deg);}
+.confetti{position:absolute; top:-20px; width:12px; height:18px; border-radius:3px; z-index:40; animation:fall linear forwards; pointer-events:none;}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg);}}
+.cert{width:min(760px,100%); max-height:100%; overflow:auto; text-align:center; background:#fffdf2; border:8px double var(--orange);}
+.cert h1{margin:4px 0; font-size:clamp(28px,4.4vw,46px); color:var(--sea2);}
+.cert .names{font-size:clamp(30px,5vw,54px); font-weight:700; color:var(--coral); margin:6px 0;}
+.stamps{display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin:12px 0;}
+.stamps span{width:64px; height:64px; border-radius:50%; border:4px dashed var(--coral); display:flex; align-items:center; justify-content:center; font-size:32px; transform:rotate(-8deg); background:#fff;}
+.names-form{display:flex; flex-direction:column; gap:12px; width:min(820px,100%); max-height:100%; overflow:auto;}
+.chips{display:flex; flex-wrap:wrap; gap:10px; justify-content:center;}
+.kidface{width:100%; aspect-ratio:1; border-radius:50%; border:5px solid var(--ink); background:#fff; display:block; box-shadow:0 6px 0 rgba(0,0,0,.2); object-fit:cover;}
+.noface{display:flex; align-items:center; justify-content:center; font-size:60px;}
+.chipface{width:clamp(64px,9vw,92px); height:clamp(64px,9vw,92px); border-radius:50%; border:3px solid var(--ink); display:block; margin:0 auto 6px; object-fit:cover; background:#fff;}
+.chip{display:flex; flex-direction:column; align-items:center;}
+.crewrow{display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin:8px 0;}
+.crewrow img, .crewrow .noface{width:64px; height:64px; border-radius:50%; border:3px solid var(--ink); font-size:32px;}
+.chip{font-size:clamp(18px,2.3vw,24px); font-weight:700; padding:10px 14px; border-radius:20px; border:4px solid var(--ink); background:#fff; opacity:.55; cursor:pointer;}
+.chip.on{background:var(--sun); opacity:1; box-shadow:0 5px 0 #d9a300;}
+.chip.on span:before{content:"✔ ";}
+.names-form input{font-size:26px; padding:14px 18px; border-radius:18px; border:4px solid var(--ink); outline:none; width:100%;}
+.names-form input:focus{border-color:var(--sea2); box-shadow:0 0 0 4px #bfeeff;}
+.muted{opacity:.7; font-size:.8em;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="bar">
+    <button class="ibtn" id="homeBtn" aria-label="Journey map">🗺️</button>
+    <div class="ttl" id="title">Balistidae Quest</div>
+    <div id="shells">🐚 0</div>
+    <button class="ibtn" id="talkBtn" aria-label="Read aloud">🗣️</button>
+    <button class="ibtn" id="sndBtn" aria-label="Sound">🔊</button>
+  </div>
+  <div id="stage"></div>
+</div>
+
+<script>
+/* =========================================================
+   BALISTIDAE QUEST — a Mozambique holiday adventure game
+   Everything is in this one file so it works offline on iPad.
+   Photos (optional) live in /assets — see PHOTOS below.
+   ========================================================= */
+
+// ---------- editable family details ----------
+const FAMILY = {
+  kids: ['Kayden', 'Oliver', 'Blake', 'Tayla', 'Gabbie'],
+  grownups: ['Lee', 'Rylie', 'Kerry', 'Wade'],
+  kidPics: { Kayden: 'assets/kid-kayden.png', Oliver: 'assets/kid-oliver.png', Blake: 'assets/kid-blake.png', Tayla: 'assets/kid-tayla.png', Gabbie: 'assets/kid-gabbie.png' },
+  dad: 'Lee',
+  hotel: 'Sun International hotel',
+  skipper: 'Marcos',
+  chef: 'Jabulani',
+  boatName: 'Titan',
+};
+// Optional holiday pictures shown as "polaroids" in the story.
+// If a file is missing it is simply skipped.
+const PHOTOS = {
+  logo: 'assets/logo.png',
+  lodge: 'assets/lodge.jpg',
+  beach: 'assets/beach.jpg',
+  boat: 'assets/boat.jpg',
+  fishing: 'assets/fishing.jpg',
+  bay: 'assets/bay.jpg',
+  peninsula: 'assets/peninsula.jpg',
+  deck: 'assets/deck.jpg',
+  turtles: 'assets/turtles.jpg',
+  oliverFishing: 'assets/oliver-fishing.jpg',
+  oliverTuna: 'assets/oliver-tuna.jpg',
+  dhow: 'assets/dhow.jpg',
+  boatRide: 'assets/boat-ride.jpg',
+  girlsBoat: 'assets/girls-boat.jpg',
+  driftwood: 'assets/driftwood-fish.jpg',
+  crew: 'assets/crew-maputo.jpg',
+};
+
+// ---------- tiny helpers ----------
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const stage = $('#stage');
+const h = html => { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; };
+const rand = (a, b) => a + Math.random() * (b - a);
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const PRAISE = ['Brilliant! 🎉', 'Spot on! ⭐', 'Legend! 🏆', 'Super smart! 🧠', 'Yes! Nailed it! 🙌', 'Awesome! 🌟', 'Correct! 🐠'];
+
+// ---------- save state ----------
+const SAVE_KEY = 'balistidae-quest-v1';
+let S = { names: [], shells: 0, done: [] };
+try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); if (s && Array.isArray(s.done)) S = s; } catch (e) {}
+function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {} }
+
+const list = n => n.length < 2 ? (n[0] || 'Explorers') : n.slice(0, -1).join(', ') + ' & ' + n[n.length - 1];
+function kids() { return list(S.names.filter(Boolean)); }
+function fill(t) { return String(t).replace(/\{kids\}/g, kids())
+  .replace(/\{allkids\}/g, list(FAMILY.kids)).replace(/\{grownups\}/g, list(FAMILY.grownups))
+  .replace(/\{p(\d)\}/g, (m, i) => FAMILY.grownups[i] || '').replace(/\{dad\}/g, FAMILY.dad).replace(/\{hotel\}/g, FAMILY.hotel)
+  .replace(/\{skipper\}/g, FAMILY.skipper).replace(/\{chef\}/g, FAMILY.chef).replace(/\{boat\}/g, FAMILY.boatName); }
+
+// ---------- sound ----------
+const sfx = (() => {
+  let ctx, on = true;
+  function c() {
+    if (!ctx) { try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+    if (ctx && ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+  function tone(f, d = .12, type = 'sine', v = .15, when = 0, slide) {
+    if (!on) return; const a = c(); if (!a) return;
+    const o = a.createOscillator(), g = a.createGain(), t0 = a.currentTime + when;
+    o.type = type; o.frequency.setValueAtTime(f, t0);
+    if (slide) o.frequency.exponentialRampToValueAtTime(slide, t0 + d);
+    g.gain.setValueAtTime(v, t0); g.gain.exponentialRampToValueAtTime(.001, t0 + d);
+    o.connect(g).connect(a.destination); o.start(t0); o.stop(t0 + d + .05);
+  }
+  return {
+    unlock: c,
+    click: () => tone(700, .06, 'triangle', .08),
+    good: () => { tone(523, .12, 'triangle'); tone(659, .12, 'triangle', .15, .1); tone(784, .22, 'triangle', .15, .2); },
+    bad: () => { tone(260, .18, 'sawtooth', .06, 0, 180); },
+    shell: () => { tone(1200, .08, 'sine', .1); tone(1600, .1, 'sine', .08, .07); },
+    splash: () => { tone(400, .3, 'sine', .1, 0, 90); },
+    snap: () => { tone(1800, .05, 'square', .12); tone(90, .35, 'sawtooth', .1, .04, 40); },
+    reel: () => tone(rand(300, 380), .04, 'square', .025),
+    fanfare: () => [523, 659, 784, 1047, 784, 1047].forEach((f, i) => tone(f, .22, 'square', .06, i * .14)),
+    toggle() { on = !on; return on; },
+    get on() { return on; },
+  };
+})();
+
+// ---------- read-aloud ----------
+let narrate = false;
+function speak(text) {
+  if (!narrate || !window.speechSynthesis) return;
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(fill(text).replace(/<[^>]+>/g, ' ').replace(/[\u{1F300}-\u{1FAFF}☀-➿]/gu, ''));
+    u.rate = .95; u.pitch = 1.1; u.lang = 'en-GB';
+    speechSynthesis.speak(u);
+  } catch (e) {}
+}
+
+// ---------- scene system ----------
+let sceneId = 0;
+function scene(fn) {
+  sceneId++;
+  stage.innerHTML = '';
+  try { window.speechSynthesis && speechSynthesis.cancel(); } catch (e) {}
+  fn(sceneId);
+}
+function later(fn, ms) { const id = sceneId; setTimeout(() => { if (id === sceneId) fn(); }, ms); }
+function loop(step) {
+  const id = sceneId; let last = performance.now();
+  function f(t) {
+    if (id !== sceneId) return;
+    const dt = Math.min(60, t - last) / 1000; last = t;
+    if (step(dt, t) !== false) requestAnimationFrame(f);
+  }
+  requestAnimationFrame(f);
+}
+function setTitle(t) { $('#title').textContent = t; }
+function toast(html, ms = 2600) {
+  $$('.toast', stage).forEach(t => t.remove());
+  const t = h(`<div class="toast">${html}</div>`); stage.appendChild(t);
+  const id = sceneId; setTimeout(() => t.remove(), ms);
+}
+function addShells(n) {
+  S.shells += n; save(); sfx.shell();
+  const el = $('#shells'); el.textContent = '🐚 ' + S.shells;
+  el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
+}
+function face(name, cls = 'kidface') {
+  const src = FAMILY.kidPics[name];
+  return src ? `<img class="${cls}" src="${src}" alt="${name}" onerror="this.replaceWith(document.createTextNode('🧒'))">` : `<div class="${cls} noface">🧒</div>`;
+}
+function photo(key) { return PHOTOS[key] ? `<img class="photo" src="${PHOTOS[key]}" alt="" onerror="this.remove()">` : ''; }
+
+// ---------- cartoon art (SVG) ----------
+const ART = {
+  trig: () => `<svg viewBox="0 0 170 130" aria-label="Trig the triggerfish">
+    <path d="M40 66 L8 38 Q4 66 8 94 Z" fill="#ffd21f" stroke="#16324f" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M72 30 L80 4 L96 26 Z" fill="#ffd21f" stroke="#16324f" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M36 66 Q48 22 100 22 Q150 24 158 66 Q150 108 100 110 Q48 110 36 66 Z" fill="#2fa8ff" stroke="#16324f" stroke-width="4"/>
+    <path d="M60 36 Q70 66 60 98" stroke="#ffd21f" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <path d="M80 28 Q92 66 80 106" stroke="#ff8fc7" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <path d="M70 102 Q100 128 128 104" fill="#ffd21f" stroke="#16324f" stroke-width="4"/>
+    <circle cx="124" cy="52" r="17" fill="#fff" stroke="#16324f" stroke-width="4"/>
+    <circle cx="128" cy="54" r="8" fill="#16324f"/><circle cx="131" cy="50" r="3" fill="#fff"/>
+    <path d="M142 80 Q152 84 158 78" stroke="#16324f" stroke-width="4" fill="#ff6b6b" stroke-linecap="round"/>
+    <path d="M104 70 Q116 62 118 78 Q110 84 104 70Z" fill="#ffd21f" stroke="#16324f" stroke-width="3"/>
+  </svg>`,
+  lee: () => `<svg viewBox="0 0 140 140" aria-label="${FAMILY.dad}">
+    <circle cx="70" cy="80" r="46" fill="#ffcf9e" stroke="#16324f" stroke-width="4"/>
+    <path d="M20 58 Q70 8 120 58 Z" fill="#2ec46d" stroke="#16324f" stroke-width="4" stroke-linejoin="round"/>
+    <rect x="10" y="54" width="120" height="12" rx="6" fill="#1a9b52" stroke="#16324f" stroke-width="4"/>
+    <rect x="36" y="70" width="28" height="18" rx="7" fill="#16324f"/><rect x="76" y="70" width="28" height="18" rx="7" fill="#16324f"/>
+    <path d="M64 78 H76" stroke="#16324f" stroke-width="4"/>
+    <path d="M50 104 Q70 120 90 104" stroke="#16324f" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <circle cx="30" cy="92" r="6" fill="#ff9b9b" opacity=".6"/><circle cx="110" cy="92" r="6" fill="#ff9b9b" opacity=".6"/>
+  </svg>`,
+  tuna: () => `<svg viewBox="0 0 260 120" aria-label="Yellowfin tuna">
+    <path d="M40 60 L4 22 Q14 60 4 98 Z" fill="#1e4f8f" stroke="#16324f" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M110 28 Q126 -6 150 26 Z" fill="#ffd21f" stroke="#16324f" stroke-width="4"/>
+    <path d="M118 92 Q132 122 150 92 Z" fill="#ffd21f" stroke="#16324f" stroke-width="4"/>
+    <path d="M36 60 Q80 18 170 22 Q236 28 254 60 Q236 94 170 98 Q80 102 36 60 Z" fill="#c9d8e8" stroke="#16324f" stroke-width="4"/>
+    <path d="M40 58 Q80 20 170 22 Q236 28 252 58 Q170 52 40 58 Z" fill="#1e4f8f"/>
+    <path d="M80 62 Q150 70 240 64" stroke="#ffd21f" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <g fill="#ffd21f" stroke="#16324f" stroke-width="2"><path d="M56 42 l8 -6 l2 8z"/><path d="M68 36 l8 -6 l2 8z"/><path d="M56 78 l8 6 l2 -8z"/><path d="M68 84 l8 6 l2 -8z"/></g>
+    <path d="M150 64 Q170 58 172 76 Q158 80 150 64Z" fill="#ffd21f" stroke="#16324f" stroke-width="3"/>
+    <circle cx="222" cy="52" r="11" fill="#fff" stroke="#16324f" stroke-width="3"/><circle cx="225" cy="53" r="5" fill="#16324f"/>
+    <path d="M240 74 Q248 76 252 70" stroke="#16324f" stroke-width="3" fill="none"/>
+  </svg>`,
+  wahoo: () => `<svg viewBox="0 0 300 90" aria-label="Wahoo">
+    <path d="M30 45 L2 18 Q12 45 2 72 Z" fill="#1c6fa8" stroke="#16324f" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M26 45 Q60 16 170 16 Q260 18 296 42 Q260 72 170 74 Q60 74 26 45 Z" fill="#8fd3ff" stroke="#16324f" stroke-width="4"/>
+    <path d="M30 44 Q60 18 170 18 Q258 20 294 42 Q170 38 30 44Z" fill="#1c6fa8"/>
+    <g stroke="#1c6fa8" stroke-width="6" stroke-linecap="round"><path d="M80 30 V60"/><path d="M110 28 V64"/><path d="M140 26 V66"/><path d="M170 26 V66"/><path d="M200 28 V62"/></g>
+    <path d="M110 18 Q160 0 220 20" fill="#1c6fa8" stroke="#16324f" stroke-width="3"/>
+    <circle cx="262" cy="38" r="8" fill="#fff" stroke="#16324f" stroke-width="3"/><circle cx="264" cy="39" r="4" fill="#16324f"/>
+    <path d="M276 52 L296 44" stroke="#16324f" stroke-width="3"/>
+  </svg>`,
+  boat: () => `<svg viewBox="0 0 260 150" aria-label="Fishing boat">
+    <path d="M150 40 L150 6 L250 -8" stroke="#16324f" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <rect x="70" y="36" width="80" height="44" rx="8" fill="#fff" stroke="#16324f" stroke-width="4"/>
+    <rect x="82" y="46" width="24" height="18" rx="4" fill="#8ee6ff" stroke="#16324f" stroke-width="3"/><rect x="114" y="46" width="24" height="18" rx="4" fill="#8ee6ff" stroke="#16324f" stroke-width="3"/>
+    <path d="M10 80 H250 L220 130 H40 Z" fill="#ff6b6b" stroke="#16324f" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M24 100 H236" stroke="#fff" stroke-width="7"/>
+    <text x="130" y="124" text-anchor="middle" font-size="16" font-weight="700" fill="#fff" font-family="Fredoka, sans-serif">${FAMILY.boatName.toUpperCase()}</text>
+  </svg>`,
+  chest: () => `<svg viewBox="0 0 200 170" class="chest" aria-label="Treasure chest">
+    <rect x="20" y="70" width="160" height="90" rx="10" fill="#b8742f" stroke="#16324f" stroke-width="5"/>
+    <rect x="20" y="96" width="160" height="12" fill="#ffd21f" stroke="#16324f" stroke-width="3"/>
+    <rect x="86" y="88" width="28" height="34" rx="6" fill="#ffd21f" stroke="#16324f" stroke-width="4"/><circle cx="100" cy="102" r="5" fill="#16324f"/>
+    <g class="treasure"><circle cx="70" cy="72" r="12" fill="#ffd21f" stroke="#e0a800" stroke-width="3"/><circle cx="96" cy="66" r="12" fill="#ffd21f" stroke="#e0a800" stroke-width="3"/><circle cx="124" cy="72" r="12" fill="#ffd21f" stroke="#e0a800" stroke-width="3"/><path d="M140 60 l8 -10 l8 10 l-8 10z" fill="#ff8fc7" stroke="#16324f" stroke-width="2"/></g>
+    <g class="chest-lid"><path d="M20 70 Q20 22 100 22 Q180 22 180 70 Z" fill="#cf8a3e" stroke="#16324f" stroke-width="5"/><path d="M92 22 V70 M108 22 V70" stroke="#ffd21f" stroke-width="8"/></g>
+  </svg>`,
+};
+
+// ---------- dialogue ----------
+// lines: strings (Trig speaks) or {who:'trig'|'lee', text, img}
+function story(lines, done, lastLabel) {
+  let i = 0;
+  const ov = h(`<div class="overlay"><div class="talk"><div class="talker"></div><div class="bubble"><div class="who"></div><div class="img"></div><div class="txt"></div><div class="actions"><button class="btn next">Next ▶</button></div></div></div></div>`);
+  stage.appendChild(ov);
+  const show = () => {
+    const l = typeof lines[i] === 'string' ? { text: lines[i] } : lines[i];
+    const who = l.who || 'trig';
+    $('.talker', ov).innerHTML = ART[who] ? ART[who]() : face(who);
+    $('.who', ov).textContent = who === 'trig' ? 'Trig the Triggerfish' : who === 'lee' ? FAMILY.dad : who;
+    $('.img', ov).innerHTML = l.img ? photo(l.img) : '';
+    $('.txt', ov).innerHTML = fill(l.text);
+    const b = $('.bubble', ov); b.style.animation = 'none'; void b.offsetWidth; b.style.animation = '';
+    $('.next', ov).textContent = i === lines.length - 1 ? (lastLabel || "Let's go! ▶") : 'Next ▶';
+    speak(l.text);
+  };
+  $('.next', ov).onclick = () => { sfx.click(); i++; if (i >= lines.length) { ov.remove(); done && done(); } else show(); };
+  show();
+}
+
+// ---------- questions ----------
+// q: {q, answer, options?, hint, fact, unit, art, tag}
+function ask(q, done) {
+  let tries = 0, val = '', dv = null;
+  const ov = h(`<div class="overlay"><div class="panel quiz pop-in">
+      ${q.art ? `<div class="qart">${q.art}</div>` : ''}
+      <div class="qtag">${q.tag || '🧠 Brain Challenge'}</div>
+      <div class="qtext">${fill(q.q)}</div>
+      <div class="qhint"></div><div class="qbody"></div></div></div>`);
+  const panel = $('.panel', ov), body = $('.qbody', ov), hint = $('.qhint', ov);
+  if (q.options) {
+    body.className = 'qbody opts';
+    if (q.options.length > 3) body.style.gridTemplateColumns = '1fr 1fr';
+    q.options.forEach(o => { const b = h(`<button class="btn opt">${o}</button>`); b.onclick = () => check(o, b); body.appendChild(b); });
+  } else {
+    body.innerHTML = `<div class="display"><span class="dv">&nbsp;</span>${q.unit ? `<span class="unit">${q.unit}</span>` : ''}</div>
+      <div class="pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9, '⌫', 0, '✓'].map(k => `<button class="key ${k === '✓' ? 'ok' : ''}" data-k="${k}">${k}</button>`).join('')}</div>`;
+    dv = $('.dv', body);
+    $$('.key', body).forEach(b => b.onclick = () => {
+      const k = b.dataset.k; sfx.click();
+      if (k === '⌫') val = val.slice(0, -1);
+      else if (k === '✓') { if (val) check(val); return; }
+      else if (val.length < 6) val += k;
+      dv.innerHTML = val || '&nbsp;';
+    });
+  }
+  stage.appendChild(ov); speak(q.q);
+  function check(v, btn) {
+    if (String(v) === String(q.answer)) {
+      const pts = tries === 0 ? 10 : tries === 1 ? 6 : 3;
+      if (btn) btn.classList.add('right');
+      sfx.good();
+      setTimeout(() => {
+        addShells(pts);
+        panel.innerHTML = `<div class="yay">${pick(PRAISE)}</div><div class="pts">+${pts} 🐚</div>
+          ${q.fact ? `<div class="fact">💡 ${fill(q.fact)}</div>` : ''}<button class="btn green go">Continue ▶</button>`;
+        panel.classList.remove('pop-in'); void panel.offsetWidth; panel.classList.add('pop-in');
+        if (q.fact) speak(q.fact);
+        $('.go', panel).onclick = () => { sfx.click(); ov.remove(); done && done(); };
+      }, btn ? 450 : 0);
+    } else {
+      tries++; sfx.bad();
+      panel.classList.remove('shake', 'pop-in'); void panel.offsetWidth; panel.classList.add('shake');
+      if (btn) { btn.classList.add('wrong'); btn.disabled = true; }
+      hint.innerHTML = '🤔 ' + fill(tries > 1 && q.hint2 ? q.hint2 : (q.hint || 'Not quite — have another go!'));
+      val = ''; if (dv) dv.innerHTML = '&nbsp;';
+    }
+  }
+}
+function askAll(qs, done) { let i = 0; const next = () => i < qs.length ? ask(qs[i++], next) : done && done(); next(); }
+
+// ---------- chapters & journey map ----------
+const CHAPTERS = [
+  { title: 'The Great Road Trip', icon: '🚗', x: 12, y: 74, run: chRoad },
+  { title: 'A Night in Maputo', icon: '🏨', x: 30, y: 38, run: chHotel },
+  { title: 'Boat to Balistidae', icon: '🚤', x: 47, y: 70, run: chBoat },
+  { title: "Hell's Gate Fishing", icon: '🎣', x: 62, y: 32, run: chFish },
+  { title: 'Mud Island', icon: '🦀', x: 76, y: 70, run: chMud },
+  { title: 'The Treasure Hunt', icon: '💰', x: 89, y: 34, run: chTreasure },
+];
+const unlocked = i => i === 0 || !!S.done[i - 1];
+
+function finishChapter(i, stampText) {
+  S.done[i] = true; save();
+  sfx.fanfare();
+  const ov = h(`<div class="overlay"><div class="center" style="gap:26px">
+      <div class="stamp"><div class="ic">${CHAPTERS[i].icon}</div><div class="t">${stampText || CHAPTERS[i].title}</div><div style="font-weight:600;margin-top:6px">PASSPORT STAMP</div></div>
+      <button class="btn green">${i < CHAPTERS.length - 1 ? 'Back to the Journey Map ▶' : 'See your certificate 🏆'}</button></div></div>`);
+  stage.appendChild(ov); confetti(60);
+  speak(`Chapter complete! You earned the ${CHAPTERS[i].title} passport stamp!`);
+  $('.btn', ov).onclick = () => { sfx.click(); i < CHAPTERS.length - 1 ? journey() : certificate(); };
+}
+
+function journey() {
+  scene(() => {
+    setTitle('🗺️ Your Mozambique Journey');
+    const el = h(`<div class="full journey"><div class="waves" style="top:0"></div></div>`);
+    const pts = CHAPTERS.map(c => `${c.x * 10},${c.y * 7}`).join(' ');
+    el.appendChild(h(`<svg class="full" viewBox="0 0 1000 700" preserveAspectRatio="none" style="width:100%;height:100%">
+      <polyline points="${pts}" fill="none" stroke="#fff" stroke-width="10" stroke-dasharray="4 22" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>`));
+    // decoration
+    [['🌴', 4, 10], ['🐬', 44, 12], ['⛵', 72, 88], ['🐢', 22, 92], ['🐠', 94, 80], ['☀️', 88, 6]].forEach(([e, x, y]) =>
+      el.appendChild(h(`<div class="bob" style="position:absolute;left:${x}%;top:${y}%;font-size:clamp(30px,5vw,56px)">${e}</div>`)));
+    const nextIdx = CHAPTERS.findIndex((c, i) => !S.done[i]);
+    CHAPTERS.forEach((c, i) => {
+      const st = S.done[i] ? 'done' : unlocked(i) ? 'next' : 'locked';
+      const b = h(`<button class="jnode ${st}" style="left:${c.x}%;top:${c.y}%"><div class="disc">${unlocked(i) ? c.icon : '🔒'}<div class="num">${i + 1}</div>${S.done[i] ? '<div class="tick">✔</div>' : ''}</div><div class="lbl">${c.title}</div></button>`);
+      b.onclick = () => {
+        sfx.click();
+        if (!unlocked(i)) { toast(`🔒 Finish chapter ${i} first!`); sfx.bad(); return; }
+        c.run();
+      };
+      el.appendChild(b);
+    });
+    const allDone = S.done.filter(Boolean).length === CHAPTERS.length;
+    const foot = h(`<div style="position:absolute;left:14px;bottom:14px;display:flex;gap:10px;flex-wrap:wrap">
+      ${allDone ? '<button class="btn small green cert">🏆 Certificate</button>' : ''}
+      <button class="btn small blue reset">↺ New game</button></div>`);
+    el.appendChild(foot);
+    if (allDone) $('.cert', foot).onclick = () => certificate();
+    $('.reset', foot).onclick = () => {
+      sfx.click();
+      const ov = h(`<div class="overlay"><div class="panel center pop-in" style="gap:14px;max-width:520px">
+        <div style="font-size:clamp(20px,2.6vw,26px);font-weight:700">Start a brand new game?</div>
+        <div>This clears all shells and passport stamps.</div>
+        <div class="row"><button class="btn coral yes">Yes, start over</button><button class="btn blue no">Keep playing</button></div></div></div>`);
+      stage.appendChild(ov);
+      $('.no', ov).onclick = () => { sfx.click(); ov.remove(); };
+      $('.yes', ov).onclick = () => { S = { names: [], shells: 0, done: [] }; save(); updateShells(); titleScreen(); };
+    };
+    stage.appendChild(el);
+    if (nextIdx >= 0 && !S.done.some(Boolean) && !journey.seen) {
+      journey.seen = true;
+      story([`Here's your adventure map, {kids}! Tap the <b class="hl">glowing</b> stop to begin.`, `Each chapter gives you a <b class="hl">passport stamp</b>. Answer questions to collect 🐚 shells!`], null, 'Got it! 👍');
+    }
+  });
+}
+function updateShells() { $('#shells').textContent = '🐚 ' + S.shells; }
+
+// ---------- title + names ----------
+function titleScreen() {
+  scene(() => {
+    setTitle('Balistidae Quest');
+    const has = S.names.length > 0;
+    const el = h(`<div class="full title-scene center" style="gap:clamp(14px,3vh,28px)">
+      <div class="sunball"></div>
+      <div class="waves" style="top:calc(45% - 20px)"></div>
+      <div class="logo-wrap">
+        <img class="logo-img" src="${PHOTOS.logo}" alt="Balistidae" onerror="this.remove()">
+        <h1 class="big-title">Balistidae<br>Quest!</h1>
+        <div class="sub-title">A Mozambique Holiday Adventure 🇲🇿</div>
+      </div>
+      <div class="row" style="z-index:2">
+        <button class="btn start">${has ? 'Continue ▶' : 'Start the Adventure ▶'}</button>
+        ${has ? '<button class="btn blue restart">New game</button>' : ''}
+      </div>
+      <div class="title-fish bob" style="left:6%;bottom:8%">${ART.trig()}</div>
+      <div class="bob" style="position:absolute;right:8%;bottom:10%;font-size:clamp(50px,8vw,90px);animation-delay:-1s">🐢</div>
+      <div class="bob" style="position:absolute;left:40%;bottom:4%;font-size:clamp(40px,6vw,70px);animation-delay:-2s">🐠</div>
+    </div>`);
+    stage.appendChild(el);
+    $('.start', el).onclick = () => { sfx.unlock(); sfx.click(); has ? journey() : namesScreen(); };
+    if (has) $('.restart', el).onclick = () => { sfx.unlock(); S = { names: [], shells: 0, done: [] }; save(); updateShells(); namesScreen(); };
+  });
+}
+
+function namesScreen() {
+  scene(() => {
+    setTitle('Who are the explorers?');
+    const el = h(`<div class="full seabg center" style="padding:16px">
+      <div class="panel names-form pop-in">
+        <div style="font-size:clamp(22px,3vw,30px);font-weight:700;text-align:center">🧭 Who's playing? Tap your names!</div>
+        <div class="chips">${FAMILY.kids.map(n => `<button class="chip on" data-n="${n}">${face(n, 'chipface')}<span>${n}</span></button>`).join('')}</div>
+        <input maxlength="14" placeholder="Someone else? Type a name" autocomplete="off" autocapitalize="words">
+        <div class="muted" style="text-align:center">Grown-up crew: ${list(FAMILY.grownups)} 😎</div>
+        <button class="btn green ready">Ready! ▶</button>
+      </div></div>`);
+    stage.appendChild(el);
+    $$('.chip', el).forEach(c => c.onclick = () => { sfx.click(); c.classList.toggle('on'); });
+    $('.ready', el).onclick = () => {
+      sfx.click();
+      S.names = $$('.chip.on', el).map(c => c.dataset.n).concat($$('input', el).map(i => i.value.trim()).filter(Boolean));
+      if (!S.names.length) { toast('👆 Tap at least one name!'); sfx.bad(); return; }
+      save();
+      scene(() => {
+        stage.appendChild(h(`<div class="full seabg"><div class="waves" style="top:calc(30% - 20px)"></div></div>`));
+        story([
+          `Olá, {kids}! 👋 I'm <b class="hl">Trig</b>, a triggerfish!`,
+          `Guess what? Scientists call my fish family <b class="hl">BALISTIDAE</b> — that's why your holiday lodge has my name! 🐟`,
+          { img: 'lodge', text: `Let's relive your amazing Mozambique holiday: the road trip, the boat ride, deep-sea fishing, Mud Island and a treasure hunt!` },
+          `Solve maths puzzles and clues to earn 🐚 shells. Tap 🗣️ at the top if you want me to read out loud. Ready?` ,
+        ], journey);
+      });
+    };
+  });
+}
+
+/* =========================================================
+   CHAPTER 1 — THE GREAT ROAD TRIP (Ballito → Maputo)
+   ========================================================= */
+const P1 = (lat, lon) => [(lon - 30.45) * 140, (-25.55 - lat) * 140];
+const ROAD = [
+  { name: 'Ballito', ll: [-29.54, 31.21], stop: 1, lx: -12, la: 'end' },
+  { ll: [-29.2, 31.52] },
+  { name: 'Richards Bay', ll: [-28.78, 32.04], stop: 1, km: 140, lx: -12, la: 'end',
+    q: { q: `Ballito to Richards Bay is about <b>140 km</b>. The car travels <b>70 km every hour</b>. How many hours does it take?`, answer: 2, unit: 'hours',
+      hint: 'How many 70s fit into 140?', fact: 'Richards Bay has one of the biggest coal-export harbours in the whole world! 🚢' } },
+  { ll: [-28.45, 32.18] },
+  { name: 'iSimangaliso', ll: [-28.05, 32.28], stop: 1, km: 90, lx: -12, la: 'end',
+    q: { tag: '🦛 Animal Challenge', q: `iSimangaliso Wetland Park is full of hippos! About how heavy is a grown-up hippo?`, options: ['15 kg', '1,500 kg', '150 kg'], answer: '1,500 kg',
+      hint: "Hippos are HUGE — heavier than a car!", fact: "iSimangaliso was South Africa's first World Heritage Site (1999). It has hippos, crocodiles, turtles and even whales out at sea!" } },
+  { ll: [-27.45, 32.55] },
+  { name: 'Kosi Bay Border', ll: [-26.87, 32.82], stop: 1, km: 160, lx: 12, la: 'start',
+    qs: [
+      { tag: '🛂 Border Challenge', q: `Welcome to the border! 🇲🇿 Mozambique's flag is the ONLY national flag in the world with a…`, options: ['Fish 🐟', 'Rifle 🔫', 'Elephant 🐘'], answer: 'Rifle 🔫',
+        hint: 'It stands for defending the country…', fact: "The flag also has a <b>hoe</b> (farming) and a <b>book</b> (education) on a yellow star. 🌟" },
+      { tag: '💰 Money Challenge', q: `In Mozambique the money is called <b>Meticais (MT)</b>. Pretend <b>R1 = 3½ MT</b>.<br>{p1} swaps <b>R100</b>. How many Meticais do you get for <b>R100</b>?`, answer: 350, unit: 'MT',
+        hint: 'R100 × 3 = 300… now add half of 100.', fact: 'One Metical is split into 100 centavos — just like one Rand is 100 cents!' },
+    ] },
+  { name: 'Bela Vista', ll: [-26.33, 32.67], stop: 1, km: 70, lx: -12, la: 'end',
+    q: { tag: '🗣️ Language Challenge', q: `People in Mozambique mostly speak…`, options: ['Spanish', 'Portuguese', 'French'], answer: 'Portuguese',
+      hint: 'Mozambique was once ruled by a country next to Spain…', fact: 'Try it! <b>Olá</b> = Hello, <b>Obrigado</b> = Thank you (girls say <b>Obrigada</b>), <b>Tchau</b> = Bye!' } },
+  { name: 'Katembe Bridge', ll: [-26.05, 32.56], stop: 1, km: 40, lx: -12, la: 'end',
+    q: { tag: '🌉 Bridge Challenge', q: `The Maputo–Katembe Bridge has a middle span of <b>680 metres</b> hanging from giant cables. How far is it to the exact middle?`, answer: 340, unit: 'm',
+      hint: 'Halve 680. Half of 600 is 300, half of 80 is…', fact: 'The bridge opened in 2018 and is one of the longest suspension bridges in Africa! 🌉' } },
+  { name: 'Maputo', ll: [-25.96, 32.58], stop: 1, km: 10, lx: 12, la: 'start',
+    q: { tag: '🚗 Odometer Challenge', q: `At Ballito the car's odometer read <b>12,340 km</b>. We drove <b>510 km</b> to Maputo. What does it read now?`, answer: 12850, unit: 'km',
+      hint: '12,340 + 500 = 12,840. Now add 10 more.', fact: 'Maputo is the capital city of Mozambique — about 1 million people live there! 🏙️' } },
+];
+
+function chRoad() {
+  scene(() => {
+    setTitle('🚗 Chapter 1: The Great Road Trip');
+    const xy = ROAD.map(r => P1(...r.ll));
+    const coast = [[-30.1, 30.95], [-29.54, 31.25], [-29.1, 31.62], [-28.8, 32.1], [-28.4, 32.43], [-28.0, 32.55], [-27.5, 32.7], [-26.9, 32.9], [-26.5, 32.93], [-26.2, 32.95],
+      [-26.13, 32.9], [-26.2, 32.8], [-26.25, 32.7], [-26.15, 32.6], [-26.05, 32.55], [-25.96, 32.6], [-25.8, 32.7], [-25.5, 32.85]].map(ll => P1(...ll));
+    const land = `M0,-10 L${coast[coast.length - 1][0]},-10 ` + coast.slice().reverse().map(p => `L${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ') + ` L0,${coast[0][1] + 20} Z`;
+    const inhaca = P1(-26.05, 32.95);
+    const border = P1(-26.87, 30.45), borderEnd = P1(-26.87, 32.9);
+    const svg = `<svg viewBox="0 0 400 620" preserveAspectRatio="xMidYMid meet">
+      <defs><linearGradient id="oc" x1="0" x2="1"><stop offset="0" stop-color="#3cc8f0"/><stop offset="1" stop-color="#0a78c2"/></linearGradient></defs>
+      <rect x="0" y="-10" width="400" height="640" fill="url(#oc)"/>
+      <path d="${land}" fill="#7fd67a" stroke="#16324f" stroke-width="3"/>
+      <ellipse cx="${inhaca[0]}" cy="${inhaca[1]}" rx="9" ry="13" fill="#7fd67a" stroke="#16324f" stroke-width="2.5"/>
+      <line x1="${border[0]}" y1="${border[1]}" x2="${borderEnd[0]}" y2="${borderEnd[1]}" stroke="#c94444" stroke-width="3" stroke-dasharray="8 6"/>
+      <text x="90" y="${border[1] - 10}" font-size="15" font-weight="700" fill="#16324f">MOZAMBIQUE 🇲🇿</text>
+      <text x="40" y="${border[1] + 24}" font-size="15" font-weight="700" fill="#16324f">SOUTH AFRICA 🇿🇦</text>
+      <text x="300" y="470" font-size="17" font-weight="700" fill="#fff" transform="rotate(-70 300 470)">INDIAN OCEAN 🐋</text>
+      <polyline points="${xy.map(p => p.join(',')).join(' ')}" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>
+      <polyline points="${xy.map(p => p.join(',')).join(' ')}" fill="none" stroke="#9aa7b3" stroke-width="3" stroke-dasharray="6 6"/>
+      <polyline id="trail" points="" fill="none" stroke="#ff6b6b" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      ${ROAD.map((r, i) => r.stop ? `<g><circle cx="${xy[i][0]}" cy="${xy[i][1]}" r="8" fill="#ffd21f" stroke="#16324f" stroke-width="3" class="stopdot" data-i="${i}"/>
+        <text x="${xy[i][0] + r.lx}" y="${xy[i][1] + 5}" text-anchor="${r.la}" font-size="14" font-weight="700" fill="#16324f" stroke="#fff" stroke-width="4" paint-order="stroke">${r.name}</text></g>` : '').join('')}
+      <g id="car"><text font-size="30" text-anchor="middle" y="10" transform="scale(-1,1)">🚙</text></g>
+    </svg>`;
+    const el = h(`<div class="mapwrap"><div class="mapbox">${svg}</div>
+      <div class="side"><div class="panel info"></div><div class="odo-row" style="display:flex;align-items:center;gap:10px;justify-content:center;font-weight:600">Odometer <div class="odo"></div></div><button class="btn go">Drive! 🚗</button></div></div>`);
+    stage.appendChild(el);
+    const car = $('#car', el), trail = $('#trail', el), info = $('.info', el), go = $('.go', el), odo = $('.odo', el);
+    const stops = ROAD.map((r, i) => r.stop ? i : -1).filter(i => i >= 0);
+    let at = 0, driven = 0;
+    const setOdo = v => { odo.innerHTML = String(12340 + Math.round(v)).padStart(5, '0').split('').map(d => `<span>${d}</span>`).join(''); };
+    const placeCar = p => car.setAttribute('transform', `translate(${p[0]},${p[1] - 8})`);
+    placeCar(xy[0]); setOdo(0);
+    const trailPts = [xy[0]];
+    const upd = () => {
+      const nxt = stops[at + 1];
+      info.innerHTML = nxt !== undefined
+        ? `📍 You are in <b>${ROAD[stops[at]].name}</b>.<br>Next stop: <b class="hl">${ROAD[nxt].name}</b> (${ROAD[nxt].km} km)`
+        : `🎉 You made it to <b>Maputo</b>! 510 km of road trip!`;
+    };
+    upd();
+    const drive = () => {
+      const from = stops[at], to = stops[at + 1];
+      go.disabled = true; sfx.click();
+      const seg = xy.slice(from, to + 1);
+      const lens = seg.slice(1).map((p, k) => Math.hypot(p[0] - seg[k][0], p[1] - seg[k][1]));
+      const total = lens.reduce((a, b) => a + b, 0);
+      const dur = 1.2 + total / 120, km0 = driven, km = ROAD[to].km;
+      let t = 0;
+      loop(dt => {
+        t = Math.min(1, t + dt / dur);
+        const e = t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+        let d = e * total, k = 0;
+        while (k < lens.length - 1 && d > lens[k]) { d -= lens[k]; k++; }
+        const f = lens[k] ? Math.min(1, d / lens[k]) : 1;
+        const p = [seg[k][0] + (seg[k + 1][0] - seg[k][0]) * f, seg[k][1] + (seg[k + 1][1] - seg[k][1]) * f];
+        placeCar(p);
+        trail.setAttribute('points', trailPts.concat(seg.slice(1, k + 1), [p]).map(q => q.join(',')).join(' '));
+        setOdo(km0 + km * e);
+        if (t >= 1) {
+          trailPts.push(...seg.slice(1)); driven += km; at++;
+          arrive(to); return false;
+        }
+      });
+    };
+    const arrive = i => {
+      const r = ROAD[i]; upd();
+      const after = () => {
+        if (at >= stops.length - 1) {
+          story([`Phew! 510 km later you rolled into <b class="hl">Maputo</b>, the capital of Mozambique! 🏙️`, `Time to check in at the {hotel} for the night… 🛎️`],
+            () => finishChapter(0, 'Road Trip Hero'), 'Collect stamp! ✨');
+        } else { go.disabled = false; go.classList.add('pulse'); }
+      };
+      toast(`📍 Arrived at <b>${r.name}</b>!`);
+      later(() => r.qs ? askAll(r.qs, after) : r.q ? ask(r.q, after) : after(), 600);
+    };
+    go.onclick = () => { go.classList.remove('pulse'); drive(); };
+    story([
+      `It's the start of the holiday! 🎒 The whole crew — {allkids}, plus {grownups} — sets off from <b class="hl">Ballito</b>, South Africa.`,
+      { who: 'Kayden', text: `Are we there yet? 😂` },
+      `Not even close, Kayden! We're driving all the way up the coast to <b class="hl">Maputo</b> in Mozambique. Watch the map!`,
+      `Tap <b>Drive! 🚗</b> to go to each stop. At every stop there's a challenge to solve!`,
+    ], () => go.classList.add('pulse'));
+  });
+}
+
+/* =========================================================
+   CHAPTER 2 — A NIGHT IN MAPUTO (hotel)
+   ========================================================= */
+function chHotel() {
+  scene(() => {
+    setTitle('🏨 Chapter 2: A Night in Maputo');
+    const el = h(`<div class="full center" style="background:linear-gradient(180deg,#2b2d6e 0%,#6b4bb8 40%,#ff9f7a 70%,#ffd08a 100%)"></div>`);
+    stage.appendChild(el);
+    [['⭐', 10, 8], ['⭐', 30, 14], ['🌙', 84, 8], ['⭐', 60, 6], ['✨', 72, 18]].forEach(([e, x, y]) =>
+      el.appendChild(h(`<div class="bob" style="position:absolute;left:${x}%;top:${y}%;font-size:34px">${e}</div>`)));
+    const PAIRS = [
+      ['🦐', 'Mozambique is famous for giant <b>peri-peri prawns</b>! 🌶️'],
+      ['🥥', 'Coconut palms grow all along the Mozambique coast. 🌴'],
+      ['🐢', 'Five kinds of sea turtle swim in Mozambique\'s waters! 🐢'],
+      ['🐬', 'Dolphins love Ponta do Ouro, just south of Maputo. 🐬'],
+      ['⛵', 'A <b>dhow</b> is a wooden sailing boat used here for hundreds of years. ⛵'],
+      ['🥭', 'Mozambique grows super-sweet mangoes and cashew nuts! 🥭'],
+    ];
+    const deck = shuffle(PAIRS.concat(PAIRS).map(([e, f], k) => ({ e, f, k })));
+    const startMemory = () => {
+      const wrap = h(`<div class="center" style="gap:14px;width:100%;height:100%;padding:14px">
+        <div class="panel" style="padding:10px 18px;font-size:clamp(17px,2.2vw,22px);font-weight:600">🃏 Find the matching pairs! <span class="moves"></span></div>
+        <div class="mem-grid"></div></div>`);
+      el.appendChild(wrap);
+      const grid = $('.mem-grid', wrap), mv = $('.moves', wrap);
+      let open = [], moves = 0, matched = 0, busy = false;
+      mv.textContent = '· Moves: 0';
+      deck.forEach(c => {
+        const b = h(`<button class="card"><div class="in"><div class="f">🐟</div><div class="b">${c.e}</div></div></button>`);
+        b.onclick = () => {
+          if (busy || b.classList.contains('flip')) return;
+          sfx.click(); b.classList.add('flip'); open.push([b, c]);
+          if (open.length === 2) {
+            moves++; mv.textContent = '· Moves: ' + moves;
+            const [[b1, c1], [b2, c2]] = open; open = [];
+            if (c1.e === c2.e) {
+              b1.classList.add('done'); b2.classList.add('done'); matched++; sfx.good(); toast(c1.f, 3000);
+              if (matched === PAIRS.length) later(() => {
+                const pts = moves <= 9 ? 20 : moves <= 13 ? 14 : 10;
+                addShells(pts); toast(`All pairs in ${moves} moves! +${pts} 🐚`);
+                later(() => { wrap.remove(); safePuzzle(); }, 1400);
+              }, 800);
+            } else { busy = true; later(() => { b1.classList.remove('flip'); b2.classList.remove('flip'); busy = false; }, 900); }
+          }
+        };
+        grid.appendChild(b);
+      });
+    };
+    const safePuzzle = () => {
+      el.appendChild(h(`<div style="font-size:clamp(90px,16vw,170px)" class="bob">🔐</div>`));
+      story([`Uh-oh! The snacks are locked in the <b class="hl">room safe</b> 🍫 and nobody remembers the code!`, `Luckily there's a note with three clues. Let's crack it!`], () =>
+        ask({ tag: '🔐 Crack the Code', q: `<ul><li>1st digit: a crab has <b>10 legs</b>. Divide by 5.</li><li>2nd digit: <b>3 × 3</b></li><li>3rd digit: <b>7 + 8 − 10</b></li></ul>What is the 3-digit code?`,
+          answer: 295, hint: 'Work out each clue one at a time: 10 ÷ 5, then 3 × 3, then 7 + 8 − 10.', fact: 'Click! The safe opens — snacks for everyone! 🍫🍪' }, () => {
+          $$('.bob', el).forEach(n => n.textContent.includes('🔐') && (n.textContent = '🍫'));
+          askAll([
+            { tag: '🏙️ Maputo Quiz', q: 'Long ago, Maputo had a different name. What was it?', options: ['Lourenço Marques', 'Cape Town', 'Lisbon'], answer: 'Lourenço Marques',
+              hint: "It's named after a Portuguese explorer!", fact: 'Maputo was called <b>Lourenço Marques</b> until 1976, after a Portuguese trader who explored the bay in the 1500s.' },
+            { tag: '🎨 Culture Quiz', q: 'A <b>capulana</b> is a colourful thing people wear in Mozambique. What is it?', options: ['A hat', 'A cloth wrap', 'A shoe'], answer: 'A cloth wrap',
+              hint: 'It can be a skirt, a baby carrier, or even a towel!', fact: 'Capulanas are bright printed cloths — used as skirts, head wraps, baby slings and beach towels!' },
+          ], () => story([`What a night! 😴 Tomorrow morning we leave Maputo… <b class="hl">by BOAT!</b> 🚤`], () => finishChapter(1, 'Maputo Night Owl'), 'Collect stamp! ✨'));
+        }));
+    };
+    story([
+      `After the long drive, {grownups} and all five kids check in at the <b class="hl">{hotel}</b> in Maputo for one night. 🛎️`,
+      { img: 'crew', text: `At sunset the whole crew heads down to the beach in front of the hotel for a photo on an old fishing boat. Say "queijo"! 📸 (That's Portuguese for cheese!)` },
+      `From the hotel you can see Maputo Bay sparkle as the sun goes down. 🌅`,
+      { who: 'Gabbie', text: `Can we order chips to the room? 🍟 Pleeease?` },
+      `Before bed — a memory game! Flip two cards at a time and find all the matching pairs.`,
+    ], startMemory);
+  });
+}
+
+/* =========================================================
+   CHAPTER 3 — BOAT TO BALISTIDAE (Maputo Bay map)
+   ========================================================= */
+const BAY = {
+  maputo: [96, 74], lodge: [294, 176], inhaca: [336, 96], hellsGate: [312, 150], mud: [238, 205], portuguese: [284, 70],
+  route: [[96, 74], [138, 92], [180, 110], [218, 128], [250, 146], [276, 164], [294, 176]],
+};
+function bayMapSVG(extra = '') {
+  return `<svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid meet">
+    <defs><linearGradient id="bay" x1="0" x2="1"><stop offset="0" stop-color="#5fd4f4"/><stop offset=".8" stop-color="#1ea7e0"/><stop offset="1" stop-color="#0a6db3"/></linearGradient></defs>
+    <rect width="400" height="300" fill="url(#bay)"/>
+    <path d="M0,0 L128,0 Q112,40 100,64 Q86,92 92,130 Q108,210 190,254 Q250,284 290,300 L0,300Z" fill="#7fd67a" stroke="#16324f" stroke-width="3"/>
+    <path d="M282,300 Q280,230 292,172 Q298,150 306,158 Q312,210 322,300Z" fill="#ffe39a" stroke="#16324f" stroke-width="3"/>
+    <path d="M300,300 Q298,240 304,190" stroke="#7fd67a" stroke-width="7" fill="none"/>
+    <path d="M314,70 Q330,50 356,58 Q378,72 372,106 Q364,134 336,138 Q312,132 316,108 Q306,90 314,70Z" fill="#7fd67a" stroke="#16324f" stroke-width="3"/>
+    <ellipse cx="${BAY.portuguese[0]}" cy="${BAY.portuguese[1]}" rx="12" ry="7" fill="#ffe39a" stroke="#16324f" stroke-width="2.5"/>
+    <ellipse cx="${BAY.mud[0]}" cy="${BAY.mud[1]}" rx="18" ry="9" fill="#b88a5a" stroke="#16324f" stroke-width="2.5"/>
+    <g font-size="11" font-weight="700" fill="#16324f" stroke="#fff" stroke-width="3" paint-order="stroke">
+      <text x="${BAY.maputo[0] - 6}" y="${BAY.maputo[1] - 10}" text-anchor="end">Maputo 🏙️</text>
+      <text x="${BAY.inhaca[0]}" y="${BAY.inhaca[1] + 4}" text-anchor="middle">Inhaca</text>
+      <text x="${BAY.portuguese[0]}" y="${BAY.portuguese[1] - 11}" text-anchor="middle" font-size="9">Portuguese Is.</text>
+      <text x="${BAY.mud[0]}" y="${BAY.mud[1] + 22}" text-anchor="middle" font-size="10">Mud Island</text>
+      <text x="${BAY.hellsGate[0] + 14}" y="${BAY.hellsGate[1] + 4}" font-size="10" fill="#c94444">Hell's Gate 🔥</text>
+      <text x="${BAY.lodge[0] - 10}" y="${BAY.lodge[1] + 4}" text-anchor="end">Balistidae ⭐</text>
+      <text x="302" y="262" text-anchor="middle" font-size="9" transform="rotate(-86 302 262)">Santa Maria peninsula</text>
+      <text x="180" y="170" text-anchor="middle" font-size="14" fill="#0a5a94" stroke="none">Maputo Bay</text>
+      <text x="372" y="230" text-anchor="middle" font-size="12" fill="#fff" stroke="none" transform="rotate(-90 372 230)">Indian Ocean</text>
+    </g>
+    <circle cx="${BAY.lodge[0]}" cy="${BAY.lodge[1]}" r="7" fill="#ffd21f" stroke="#16324f" stroke-width="3"/>
+    ${extra}
+  </svg>`;
+}
+function chBoat() {
+  scene(() => {
+    setTitle('🚤 Chapter 3: Boat to Balistidae');
+    const el = h(`<div class="mapwrap"><div class="mapbox">${bayMapSVG(`
+        <polyline id="wake" points="" fill="none" stroke="#fff" stroke-width="4" stroke-dasharray="2 6" stroke-linecap="round"/>
+        <g id="buoys"></g>
+        <g id="boat"><text font-size="24" text-anchor="middle" y="8" transform="scale(-1,1)">🚤</text></g>`)}</div>
+      <div class="side"><div class="panel clue" style="text-align:center"></div><div class="panel" style="font-size:16px;padding:12px 16px">🧭 Tap the buoy with the right answer to steer the boat. Wrong buoys are <b>sandbanks</b>!</div></div></div>`);
+    stage.appendChild(el);
+    const boat = $('#boat', el), buoys = $('#buoys', el), clue = $('.clue', el), wake = $('#wake', el);
+    const R = BAY.route;
+    const place = p => boat.setAttribute('transform', `translate(${p[0]},${p[1]})`);
+    place(R[0]);
+    const wakePts = [R[0]];
+    const STEPS = [
+      { c: 'Sail to the buoy showing <b>6 × 7</b>', a: 42, d: [36, 48] },
+      { c: 'Sail to the buoy showing <b>81 ÷ 9</b>', a: 9, d: [8, 7] },
+      { c: 'Sail to <b>half of 150</b>', a: 75, d: [50, 70] },
+      { c: 'Sail to <b>25% of 200</b>', a: 50, d: [25, 40] },
+      { c: 'Sail to <b>3×3 + 4×4</b>', a: 25, d: [49, 12] },
+      { c: 'Last one! Sail to <b>1000 − 999 + 99</b>', a: 100, d: [98, 101] },
+    ];
+    let step = 0, tries = 0;
+    const show = () => {
+      const s = STEPS[step], target = R[step + 1];
+      clue.innerHTML = `<div class="qtag">⚓ Clue ${step + 1} of ${STEPS.length}</div><div style="font-size:clamp(20px,2.8vw,28px);margin-top:8px">${s.c}</div>`;
+      speak(clue.textContent);
+      const offs = shuffle([[0, 0], [-26, 26], [18, -30], [30, 18]]).slice(0, 3);
+      // correct buoy sits on the route; decoys offset
+      const vals = shuffle([s.a, ...s.d]);
+      buoys.innerHTML = '';
+      vals.forEach((v, k) => {
+        const p = v === s.a ? target : [target[0] + (offs[k][0] || 24), target[1] + (offs[k][1] || -24)];
+        const g = h(`<svg><g class="buoy" transform="translate(${p[0]},${p[1]})"><circle r="14" fill="${v === s.a ? '#ff6b6b' : '#ff6b6b'}" stroke="#16324f" stroke-width="3"/><circle r="9" fill="#fff"/><text text-anchor="middle" y="4" font-size="${String(v).length > 2 ? 8 : 11}" fill="#16324f">${v}</text></g></svg>`).firstElementChild;
+        g.onclick = () => choose(v, g, p);
+        buoys.appendChild(g);
+      });
+    };
+    const choose = (v, g, p) => {
+      if (choose.busy) return;
+      const s = STEPS[step];
+      if (v !== s.a) {
+        tries++; sfx.bad(); g.style.opacity = .3; g.onclick = null;
+        toast(`🏝️ Bump! That's a sandbank. ${tries > 1 ? 'Hint: answer is ' + (s.a > 20 ? 'more than 20' : 'less than 20') : 'Try again!'}`);
+        return;
+      }
+      choose.busy = true; sfx.good(); addShells(tries === 0 ? 8 : 4); tries = 0; buoys.innerHTML = '';
+      const a = R[step], b = R[step + 1]; let t = 0;
+      loop(dt => {
+        t = Math.min(1, t + dt / 1.1);
+        const q = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t + Math.sin(t * 12) * 1.5];
+        place(q); wake.setAttribute('points', wakePts.concat([q]).map(z => z.join(',')).join(' '));
+        if (t >= 1) {
+          wakePts.push(b); step++; choose.busy = false;
+          if (step < STEPS.length) show(); else arrived();
+          return false;
+        }
+      });
+    };
+    const arrived = () => {
+      clue.innerHTML = '🎉 <b>Land ahoy!</b> Welcome to Balistidae!';
+      sfx.fanfare(); confetti(40);
+      later(() => story([
+        { img: 'lodge', text: `Land ahoy! You made it to <b class="hl">Balistidae</b>, on the western tip of the <b class="hl">Santa Maria peninsula</b>! 🏝️` },
+        { img: 'deck', text: `A beach villa hidden in the dune forest, with a sundowner deck, a pool and a fire pit. Chef <b class="hl">{chef}</b> is already cooking peri-peri prawns! 🦐🌶️` },
+        `And it's named after MY fish family! 😎`,
+      ], () => askAll([
+        { tag: '⏱️ Speed Challenge', q: '{boat} crosses the bay — <b>40 km</b> — in <b>1 hour</b>. How many km does it travel in <b>15 minutes</b>?', answer: 10, unit: 'km',
+          hint: '15 minutes is a quarter of an hour. What is a quarter of 40?', fact: 'Boat speed is often measured in <b>knots</b>. 1 knot is about 1.85 km per hour. Skipper {skipper} has been driving boats for over 10 years!' },
+        { tag: '🛏️ Villa Challenge', q: 'Balistidae has <b>6 suites</b>. Each suite sleeps <b>2 guests</b>. How many guests can stay at once?', answer: 12, unit: 'guests',
+          hint: '6 × 2 = ?', fact: 'Every suite has its own outdoor shower and private deck with views of the bay! 🚿' },
+        { tag: '🐟 Fish Fact', q: 'Triggerfish (the Balistidae family!) have a special spine on their back. What does it do?', options: ['Locks them into rock holes so they can\'t be pulled out', 'Shoots poison darts', 'Plays music'], answer: 'Locks them into rock holes so they can\'t be pulled out',
+          hint: "It works like a 'trigger' that clicks into place…", fact: 'Pull the "trigger" (a smaller spine) and the big one unlocks — that\'s how triggerfish got their name!' },
+      ], () => finishChapter(2, 'Captain of the Bay'))), 900);
+    };
+    story([
+      { img: 'boat', text: `Good morning! ☀️ Today we leave Maputo on <b class="hl">{boat}</b>, the lodge's boat, with skipper <b class="hl">{skipper}</b>! 🚤` },
+      { img: 'boatRide', text: `Gabbie and Tayla grab the best seats on the back of the boat. Wind in your hair! 🌬️` },
+      { who: 'Tayla', text: `Wow, look how blue the water is! 💙` },
+      `Look at the map: we must cross the whole of <b class="hl">Maputo Bay</b>. But watch out for sandbanks! 🏝️`,
+      `Solve each clue and tap the buoy with the right number to steer. Anchors up! ⚓`,
+    ], show);
+  });
+}
+
+/* =========================================================
+   CHAPTER 4 — HELL'S GATE & DEEP-SEA FISHING
+   ========================================================= */
+function chFish() {
+  const part1 = () => scene(() => {
+    setTitle("🌊 Chapter 4: Through Hell's Gate");
+    const el = h(`<div class="full fishing">
+      <div class="waves" style="top:calc(22% - 20px)"></div>
+      <div class="rock" style="left:30%;top:14%">🪨</div><div class="rock" style="left:30%;top:44%">🪨</div>
+      <div class="rock" style="left:60%;top:10%">🪨</div><div class="rock" style="left:60%;top:48%">🪨</div>
+      <div class="hint-top" style="top:62%">Tap <b>GO!</b> when the black line is in the <b style="color:#1a9b52">GREEN</b> zone to ride the waves!</div>
+      <div class="gboat" style="position:absolute;left:4%;top:24%;width:clamp(120px,16vw,180px);transition:left 1s cubic-bezier(.3,1.4,.5,1)">${ART.boat()}</div>
+      <div class="gdots">⚪⚪⚪</div>
+      <div class="gate-meter"><div class="zone"></div><div class="needle"></div></div>
+      <button class="btn coral go" style="position:absolute;left:50%;bottom:4%;transform:translateX(-50%);font-size:30px;padding:14px 60px">GO! 🌊</button>
+    </div>`);
+    stage.appendChild(el);
+    const zone = $('.zone', el), needle = $('.needle', el), boat = $('.gboat', el), dots = $('.gdots', el), go = $('.go', el);
+    let x = 0, dir = 1, speed = .55, wins = 0, lock = true, zs = 0, zw = .24, fails = 0;
+    const newZone = () => { zs = rand(.1, .9 - zw); zone.style.left = zs * 100 + '%'; zone.style.width = zw * 100 + '%'; };
+    newZone();
+    loop(dt => { if (!lock) { x += dir * speed * dt; if (x > 1) { x = 1; dir = -1; } if (x < 0) { x = 0; dir = 1; } } needle.style.left = x * 100 + '%'; boat.style.transform = `rotate(${Math.sin(performance.now() / 300) * 4}deg)`; });
+    go.onclick = () => {
+      if (lock) return;
+      if (x >= zs && x <= zs + zw) {
+        wins++; sfx.good(); sfx.splash(); addShells(5); lock = true;
+        dots.textContent = '🟢'.repeat(wins) + '⚪'.repeat(3 - wins);
+        boat.style.left = (4 + wins * 26) + '%';
+        later(() => {
+          if (wins >= 3) {
+            story([`WOW! 🌊 You steered right through <b class="hl">Hell's Gate</b> — the wild channel where Maputo Bay meets the open ocean!`, `Now we're out in the deep blue sea. Rods out! 🎣`], part2, 'Start fishing! 🎣');
+          } else { zw = Math.max(.12, zw - .05); speed += .2; newZone(); lock = false; }
+        }, 1100);
+      } else {
+        fails++; sfx.bad(); sfx.splash();
+        el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake');
+        toast(fails > 2 ? '💦 Splash! Tip: tap just as the line ENTERS the green.' : '💦 SPLASH! Big wave! Wait for the green…', 1800);
+      }
+    };
+    story([
+      { img: 'fishing', text: `Today is the big day: <b class="hl">deep-sea fishing</b> on {boat} with skipper {skipper}! 🎣` },
+      { img: 'girlsBoat', text: `Tayla and Gabbie ride up top as {boat} zooms out of the bay. Look at that wake! 🌊` },
+      `But first the boat must get through <b class="hl">Hell's Gate</b> 🔥 — a narrow channel with huge waves and strong currents!`,
+      `Time the waves: tap GO when the line is in the green. Three good waves and we're through!`,
+    ], () => { lock = false; });
+  });
+
+  // Reel mini-game shared by wahoo & tuna
+  function reelScene(opts) {
+    scene(() => {
+      setTitle(opts.title);
+      const el = h(`<div class="full fishing">
+        <div class="waves" style="top:calc(22% - 20px)"></div>
+        <div class="boat">${ART.boat()}</div>
+        <svg class="line"><line x1="0" y1="0" x2="0" y2="0" stroke="#fff" stroke-width="3"/></svg>
+        <div class="fish">${opts.art}</div>
+        <div class="tlabel">Tension</div><div class="tmeter"><div class="nd"></div></div>
+        <div class="pbar"><div class="fill"></div><div class="lb">Reel it in!</div></div>
+        <div class="hint-top">${opts.hint}</div>
+        <button class="btn reel ${opts.btnClass || 'green'}">${opts.btn}</button>
+      </div>`);
+      stage.appendChild(el);
+      const fish = $('.fish', el), nd = $('.nd', el), fill = $('.fill', el), line = $('line', el), btn = $('.reel', el), rod = $('.boat', el);
+      const state = { T: 30, P: 0, hold: false, run: 0, runT: rand(2, 3.5), over: false, reelTick: 0 };
+      const down = e => { e.preventDefault(); sfx.unlock(); state.hold = true; };
+      const up = e => { e && e.preventDefault(); state.hold = false; };
+      btn.addEventListener('pointerdown', down); btn.addEventListener('pointerup', up); btn.addEventListener('pointerleave', up); btn.addEventListener('pointercancel', up);
+      btn.addEventListener('contextmenu', e => e.preventDefault());
+      loop((dt, now) => {
+        if (state.over) return false;
+        opts.tick(state, dt);
+        state.T = Math.max(0, Math.min(100, state.T)); state.P = Math.max(0, Math.min(100, state.P));
+        nd.style.bottom = `calc(${state.T}% - 4px)`;
+        fill.style.width = state.P + '%';
+        const W = el.clientWidth, H = el.clientHeight;
+        const fx = W * (.62 - state.P * .003) + Math.sin(now / 250) * (state.run > 0 ? 26 : 8);
+        const fy = H * (.88 - state.P * .006);
+        fish.style.left = (fx - fish.clientWidth / 2) + 'px'; fish.style.top = (fy - fish.clientHeight / 2) + 'px';
+        fish.style.transform = `rotate(${state.run > 0 ? Math.sin(now / 80) * 12 : 0}deg)`;
+        const rb = rod.getBoundingClientRect(), eb = el.getBoundingClientRect();
+        line.setAttribute('x1', rb.right - eb.left - 4); line.setAttribute('y1', rb.top - eb.top + 4);
+        line.setAttribute('x2', fx + fish.clientWidth * .38); line.setAttribute('y2', fy);
+        if (state.hold && (state.reelTick += dt) > .08) { state.reelTick = 0; sfx.reel(); }
+        if (state.T >= 100) { state.over = true; snap(); return false; }
+        if (state.P >= 100) { state.over = true; opts.win(); return false; }
+      });
+      function snap() {
+        sfx.snap(); line.style.display = 'none';
+        el.classList.add('shake');
+        fish.style.transition = 'left 1.2s ease-in, top 1.2s ease-in, opacity 1.2s';
+        fish.style.left = (el.clientWidth + 50) + 'px'; fish.style.top = (el.clientHeight * .9) + 'px'; fish.style.opacity = 0;
+        later(opts.lose, 1300);
+      }
+      if (opts.intro) opts.intro();
+    });
+  }
+
+  const part2 = () => reelScene({
+    title: `🐟 Chapter 4: ${FAMILY.dad}'s Wahoo`,
+    art: ART.wahoo(), btn: `PULL HARD<br>like ${FAMILY.dad}! 💪`, btnClass: 'coral',
+    hint: `${FAMILY.dad} has hooked a <b>WAHOO</b>! Press and hold the big button!`,
+    tick(s, dt) {
+      // once you grab the rod, Lee yanks with all his might — too hard!
+      if (s.hold) s.pulled = true;
+      if (s.pulled) { s.T += 110 * dt; s.P += 14 * dt; } else { s.T += (40 - s.T) * dt; }
+    },
+    win() { /* impossible — Lee always pulls too hard! */ },
+    lose() {
+      story([
+        { who: 'lee', text: `SNAP! 😱 Noooo! The line broke… I pulled in <b class="hl">too hard</b>! The wahoo got away! 🐟💨` },
+        `Ha! Poor {dad}! 😂 Wahoo are one of the <b class="hl">fastest fish in the sea</b> — they can zoom at about 75 km/h!`,
+        `Lesson learned: pull too hard and the tension goes into the <b style="color:#c94444">RED</b>… SNAP! 🧵✂️`,
+        { who: 'Oliver', img: 'oliverFishing', text: `Let me try! I'll reel in GENTLY… not like you, {dad}! 😜🎣` },
+      `Keep the tension line in the <b style="color:#1a9b52">GREEN</b>. Hold to reel, let go when the fish fights. Now it's YOUR turn, {kids}!`,
+      ], part3, 'Cast again! 🎣');
+    },
+    intro() { story([{ who: 'lee', text: `Whoa, something BIG is on my line! 🎣 It's a wahoo! Help me pull — as hard as we can!` }], null, "Let's pull! 💪"); },
+  });
+
+  const part3 = () => reelScene({
+    title: '🐟 Chapter 4: The Big Yellowfin',
+    art: ART.tuna(), btn: 'HOLD<br>to reel 🎣',
+    hint: 'Hold to reel. When the fish <b>runs</b> (wiggles), let go so the line doesn\'t snap!',
+    tick(s, dt) {
+      s.runT -= dt;
+      if (s.runT <= 0) { if (s.run > 0) { s.run = 0; s.runT = rand(2, 4); } else { s.run = 1; s.runT = rand(1.2, 2); } }
+      if (s.hold) { s.T += (s.run ? 75 : 28) * dt; if (s.T > 20) s.P += (s.run ? 2 : 7.5) * dt; }
+      else { s.T -= 38 * dt; if (s.run) s.P -= 4 * dt; }
+      if (s.run) s.T += 10 * dt;
+      if (!s.hold && s.T < 15) s.T = 15;
+    },
+    win() {
+      sfx.fanfare(); confetti(80); addShells(20);
+      const ov = h(`<div class="overlay"><div class="panel center pop-in" style="gap:8px;width:min(680px,100%);max-height:100%;overflow:auto">
+        <div class="yay">🎉 YOU CAUGHT IT! 🎉</div><div style="width:min(260px,60vw)">${ART.tuna()}</div>
+        <div style="font-size:clamp(20px,2.6vw,26px)">A <b class="hl">HUGE Yellowfin Tuna</b>! The biggest catch of the holiday!</div>
+        <div class="pts">+20 🐚</div>
+        <img class="photo" src="${PHOTOS.oliverTuna}" alt="Oliver with the real yellowfin tuna" style="max-height:30vh" onerror="this.remove()">
+        <div style="font-weight:600">📸 Oliver and the REAL yellowfin tuna, right in front of the Balistidae sign!</div>
+        <button class="btn green go">Measure it! 📏</button></div></div>`);
+      stage.appendChild(ov);
+      $('.btn', ov).onclick = () => {
+        sfx.click(); ov.remove();
+        askAll([
+          { tag: '📏 Measure Challenge', art: '🐟📏', q: 'The tuna is <b>1.5 metres</b> long. How many <b>centimetres</b> is that?', answer: 150, unit: 'cm',
+            hint: '1 metre = 100 cm. So 1.5 m = 100 + half of 100…', fact: 'Yellowfin tuna can grow over 2 metres long and weigh more than 150 kg!' },
+          { tag: '⚖️ Sharing Challenge', art: '🍣', q: 'The tuna gives <b>36</b> pieces of sushi. They are shared equally between the <b>4</b> grown-ups ({grownups}). How many each?', answer: 9,
+            hint: '4 × ? = 36', fact: "Tuna is warm-blooded, unlike most fish — that's why it's such a powerful, fast swimmer!" },
+          { tag: '🏎️ Speed Challenge', art: '🐟💨', q: `A yellowfin tuna can swim about <b>75 km/h</b>. A wahoo can reach about <b>78 km/h</b>. How much faster is the wahoo?`, answer: 3, unit: 'km/h',
+            hint: '78 − 75 = ?', fact: `No wonder ${FAMILY.dad}'s wahoo got away so fast! 😄` },
+        ], () => finishChapter(3, 'Deep-Sea Champion'));
+      };
+    },
+    lose() {
+      story([`SNAP! 😅 The tension went into the red — just like {dad}'s wahoo! Don't worry, let's try again. Remember: let go when it wiggles!`], part3, 'Try again 🎣');
+    },
+  });
+
+  part1();
+}
+
+/* =========================================================
+   CHAPTER 5 — MUD ISLAND (hidden creatures)
+   ========================================================= */
+function chMud() {
+  scene(() => {
+    setTitle('🦀 Chapter 5: Mud Island');
+    const ITEMS = [
+      { e: '🦀', x: 18, y: 58, f: 'Fiddler crab! 🦀 Boys have one GIANT claw that they wave to show off.' },
+      { e: '🦩', x: 84, y: 40, f: 'Flamingo! 🦩 They are pink because of the tiny shrimp and algae they eat.' },
+      { e: '🐚', x: 46, y: 78, f: 'Cowrie shell! 🐚 Long ago cowrie shells were used as money in parts of Africa.' },
+      { e: '⭐', x: 64, y: 88, f: 'Sea star! ⭐ A starfish can grow back a lost arm!' },
+      { e: '🐢', x: 92, y: 74, f: 'Sea turtle! 🐢 Loggerhead and leatherback turtles lay eggs on the Santa Maria beaches — you might even see hatchlings!' },
+      { e: '🦐', x: 34, y: 42, f: 'Prawn! 🦐 Maputo Bay is a nursery where millions of baby prawns grow up.' },
+      { e: '🐙', x: 72, y: 62, f: 'Octopus! 🐙 It has THREE hearts and blue blood!' },
+      { e: '🐟', x: 8, y: 86, f: 'Mudskipper! 🐟 A fish that walks on mud using its fins, and breathes through its skin!' },
+    ];
+    const el = h(`<div class="full mud">
+      <div class="mangrove" style="left:1%;top:14%">🌳</div><div class="mangrove" style="left:12%;top:18%">🌿</div><div class="mangrove" style="right:2%;top:12%">🌳</div>
+      <div style="position:absolute;right:30%;top:4%;font-size:40px" class="bob">🚤</div>
+      <div class="tray"></div></div>`);
+    stage.appendChild(el);
+    const tray = $('.tray', el);
+    let found = 0;
+    ITEMS.forEach((it, k) => {
+      const t = h(`<span>${it.e}</span>`); tray.appendChild(t);
+      const b = h(`<button class="hid" style="left:${it.x}%;top:${it.y}%;transform:translate(-50%,-50%) rotate(${rand(-25, 25)}deg) scale(${rand(.75, 1)})">${it.e}</button>`);
+      b.onclick = () => {
+        if (b.classList.contains('found')) return;
+        b.classList.add('found'); t.classList.add('got'); found++;
+        sfx.good(); addShells(3); toast(it.f, 3200); speak(it.f);
+        if (found === ITEMS.length) later(() => story([`You found ALL the Mud Island creatures! 🎉 You're a real marine biologist!`, `But wait… the <b class="hl">tide</b> is coming back in! 🌊`], () =>
+          ask({ tag: '🌊 Tide Challenge', q: 'Low tide was at <b>10:15</b>. You can stay on Mud Island for <b>2 hours 30 minutes</b>. When must you leave?', options: ['12:15', '12:45', '1:15'], answer: '12:45',
+            hint: '10:15 + 2 hours = 12:15. Then add 30 more minutes…', fact: 'Tides go in and out about twice a day, pulled by the Moon! 🌙 Mud Island only appears at low tide.' },
+            () => finishChapter(4, 'Mud Island Ranger')), 'Uh oh! ⏰'), 1800);
+      };
+      el.appendChild(b);
+    });
+    const hb = h(`<button class="btn small blue" style="position:absolute;right:12px;bottom:14px;z-index:6">💡 Hint</button>`);
+    hb.onclick = () => { const n = $$('.hid:not(.found)', el)[0]; if (n) { n.classList.add('pulse'); later(() => n.classList.remove('pulse'), 2500); } };
+    el.appendChild(hb);
+    story([
+      { img: 'dhow', text: `On the way you pass a traditional <b class="hl">dhow</b>, a wooden sailing boat, anchored near the sandbanks. ⛵` },
+      { img: 'bay', text: `The boat drops you on <b class="hl">Mud Island</b> in the middle of the bay! It only pops up at low tide. 🏝️` },
+      { img: 'peninsula', text: `From up high the bay looks like a painting — sandbanks, channels and shallow turquoise water everywhere! 🎨` },
+      { who: 'Blake', text: `I bet I find more crabs than anyone! 🦀` },
+      `The mud and shallow pools are full of amazing creatures. Can you find all <b class="hl">8</b>? Check the tray at the bottom!`,
+    ], null, 'Start searching! 🔍');
+  });
+}
+
+/* =========================================================
+   CHAPTER 6 — THE BALISTIDAE TREASURE HUNT
+   ========================================================= */
+function chTreasure() {
+  scene(() => {
+    setTitle('💰 Chapter 6: The Treasure Hunt');
+    const SPOTS = {
+      pool: { ic: '🏊', nm: 'Pool', x: 30, y: 44 },
+      kayak: { ic: '🛶', nm: 'Kayaks', x: 82, y: 70 },
+      palm: { ic: '🌴', nm: 'Palm Tree', x: 58, y: 36 },
+      fire: { ic: '🔥', nm: 'Fire Pit', x: 44, y: 70 },
+      lodge: { ic: '🏡', nm: 'Lodge', x: 14, y: 72 },
+      deck: { ic: '🌅', nm: 'Sundowner Deck', x: 76, y: 30 },
+      hammock: { ic: '🪢', nm: 'Hammock', x: 62, y: 84 },
+      umbrella: { ic: '⛱️', nm: 'Beach', x: 90, y: 50 },
+    };
+    const CLUES = [
+      { spot: 'pool', r: `I'm blue but I'm not the sky. You swim in me, but I'm not the sea. What am I?`,
+        q: { q: 'Clue digit! A square pool has how many <b>sides</b>… minus <b>0</b>? (Easy one!)', answer: 4, hint: 'Count the sides of a square.' } },
+      { spot: 'kayak', r: `We wait in a row on the beach in front of the villa. Grab a paddle and we'll float you across the bay! What are we?`,
+        q: { q: 'Clue digit! On the beach there are <b>5 kayaks</b> and <b>2 SUPs</b> (stand-up paddleboards). How many altogether?', answer: 7, hint: '5 + 2 = ?' } },
+      { spot: 'palm', r: `I have a trunk but I'm not an elephant. I drop coconuts but I'm not a shop. What am I?`,
+        q: { q: 'Clue digit! A coconut falls every <b>2 hours</b>. How many fall in <b>18 hours</b>?', answer: 9, hint: '18 ÷ 2 = ?' } },
+      { spot: 'fire', r: `At night everyone sits around me telling stories and toasting marshmallows. I'm HOT! Where am I?`,
+        q: { q: 'Clue digit! Chef {chef} brings <b>54</b> marshmallows for the <b>9</b> of you (5 kids + 4 grown-ups). Shared equally, how many each?', answer: 6, hint: '9 × ? = 54' } },
+    ];
+    const CODE = CLUES.map(c => c.q.answer).join('');
+    const el = h(`<div class="full parch"><div class="tmap"></div>
+      <svg class="full" viewBox="0 0 100 100" preserveAspectRatio="none" style="width:100%;height:100%">
+        <path d="M100,0 L100,100 L70,100 Q80,70 72,50 Q66,30 78,0Z" fill="#6fd0f2" opacity=".75"/>
+        <path d="M70,100 Q80,70 72,50 Q66,30 78,0" stroke="#fff" stroke-width=".8" fill="none" stroke-dasharray="2 2"/>
+      </svg>
+      <div style="position:absolute;left:4%;top:6%;font-size:clamp(40px,6vw,64px);transform:rotate(-10deg)">🧭</div>
+      <div class="riddle"></div>
+      <div class="codebox">Code: ${CLUES.map(() => '<div class="d">?</div>').join('')}</div></div>`);
+    stage.appendChild(el);
+    const riddle = $('.riddle', el), digits = $$('.codebox .d', el);
+    let k = 0;
+    Object.entries(SPOTS).forEach(([id, s]) => {
+      const b = h(`<button class="spot" style="left:${s.x}%;top:${s.y}%"><div class="ic">${s.ic}</div><div class="nm">${s.nm}</div></button>`);
+      b.onclick = () => {
+        if (k >= CLUES.length) return;
+        const c = CLUES[k];
+        if (id !== c.spot) { sfx.bad(); b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake'); toast(`🔍 Nothing hidden at the ${s.nm}… read the riddle again!`); return; }
+        sfx.good(); addShells(5); b.classList.add('done');
+        toast(`📜 You found a scroll at the ${s.nm}!`);
+        later(() => ask({ tag: `📜 Scroll ${k + 1} of ${CLUES.length}`, ...c.q, fact: `The digit is <b>${c.q.answer}</b>! Write it down… it's part of the treasure chest code!` }, () => {
+          digits[k].textContent = c.q.answer; digits[k].style.background = '#d9ffe7';
+          k++;
+          if (k < CLUES.length) showRiddle();
+          else later(() => story([`You have all 4 digits: <b class="hl">${CODE.split('').join(' - ')}</b>! 🔢`, `Quick — to the treasure chest! 💰`], chest, 'Open the chest! 🗝️'), 400);
+        }), 700);
+      };
+      el.appendChild(b);
+    });
+    const showRiddle = () => { riddle.innerHTML = `<b>📜 Riddle ${k + 1}:</b> ${CLUES[k].r}`; speak(CLUES[k].r); };
+
+    const chest = () => {
+      const vals = [0, 0, 0, 0];
+      const ov = h(`<div class="overlay"><div class="panel center pop-in" style="width:min(620px,100%);gap:6px">
+        <div style="width:min(240px,50vw)" class="chestwrap">${ART.chest()}</div>
+        <div style="font-size:clamp(20px,2.6vw,26px);font-weight:600">Turn the dials to the secret code!</div>
+        <div class="dials">${vals.map((v, i) => `<div class="dial"><button data-i="${i}" data-d="1">▲</button><div class="v">0</div><button data-i="${i}" data-d="-1">▼</button></div>`).join('')}</div>
+        <button class="btn green open">Open! 🗝️</button></div></div>`);
+      stage.appendChild(ov);
+      $$('.dial button', ov).forEach(b => b.onclick = () => {
+        const i = +b.dataset.i; vals[i] = (vals[i] + +b.dataset.d + 10) % 10; sfx.click();
+        $$('.dial .v', ov)[i].textContent = vals[i];
+      });
+      $('.open', ov).onclick = () => {
+        const p = $('.panel', ov);
+        if (vals.join('') !== CODE) { sfx.bad(); p.classList.remove('shake', 'pop-in'); void p.offsetWidth; p.classList.add('shake'); toast(`🔒 Locked! The code is on your scroll box: ${CODE.split('').join(' ')}`); return; }
+        $('.chest', ov).classList.add('open'); sfx.fanfare(); confetti(120); addShells(20);
+        $('.open', ov).remove(); $('.dials', ov).remove(); $('.panel > div:nth-child(2)', ov).remove();
+        p.appendChild(h(`<div class="center" style="gap:12px"><div class="yay">💰 TREASURE! 💰</div>
+          <div style="font-size:clamp(18px,2.4vw,24px)">Inside is the legendary <b class="hl">Golden Triggerfish Medal</b> 🏅 — for the bravest explorers of Balistidae!</div>
+          <button class="btn">Collect your medal 🏅</button></div>`));
+        $('.btn:last-child', p).onclick = () => { sfx.click(); ov.remove(); finishChapter(5, 'Treasure Hunters!'); };
+      };
+    };
+
+    story([
+      { img: 'beach', text: `Last adventure! Somewhere at <b class="hl">Balistidae</b> an old pirate hid a treasure chest. 🏴‍☠️` },
+      { img: 'driftwood', text: `Even the driftwood fish on the lodge wall seem to be pointing somewhere… 🐟🐟🐟` },
+      `And {grownups} have been acting VERY suspicious all week… 🕵️ I think they know something!`,
+      `Solve each <b>riddle</b>, then tap the right place on the map to find a scroll. Each scroll has a maths puzzle with one digit of the chest code!`,
+    ], showRiddle, 'Start the hunt! 🔍');
+  });
+}
+
+// ---------- certificate ----------
+function certificate() {
+  scene(() => {
+    setTitle('🏆 Official Explorer Certificate');
+    const rank = S.shells >= 330 ? 'Legendary Triggerfish Captains 🐟👑' : S.shells >= 250 ? 'Master Explorers of Mozambique 🧭' : 'Brave Adventurers of Balistidae ⚓';
+    const el = h(`<div class="full seabg center" style="padding:16px"><div class="panel cert pop-in">
+      <img src="${PHOTOS.logo}" alt="" style="max-height:80px;max-width:60%" onerror="this.remove()">
+      <h1>Official Balistidae Explorers</h1>
+      <div>This certificate is proudly awarded to</div>
+      <img class="photo" src="${PHOTOS.crew}" alt="The holiday crew" style="max-height:26vh;margin-top:8px" onerror="this.remove()">
+      <div class="crewrow">${S.names.map(n => face(n, '')).join('')}</div>
+      <div class="names">${kids()}</div>
+      <div style="font-size:clamp(18px,2.4vw,24px)">for completing the <b>Great Mozambique Quest</b><br>and collecting <b class="hl">${S.shells} 🐚 shells</b>!</div>
+      <div style="font-size:clamp(20px,2.8vw,28px);font-weight:700;margin-top:8px;color:var(--leaf2)">Rank: ${rank}</div>
+      <div class="muted" style="margin-top:6px">Holiday crew: {allkids} · {grownups}</div>
+      <div class="stamps">${CHAPTERS.map((c, i) => `<span style="opacity:${S.done[i] ? 1 : .25}">${c.icon}</span>`).join('')}</div>
+      <div style="width:120px;margin:0 auto">${ART.trig()}</div>
+      <div class="muted">Signed: Trig the Triggerfish · Balistidae, Mozambique 🇲🇿</div>
+      <div class="muted" style="margin:6px 0 12px">📸 Take a screenshot to keep it!</div>
+      <div class="row"><button class="btn map">Journey map 🗺️</button><button class="btn blue again">Play again ↺</button></div>
+    </div></div>`);
+    el.innerHTML = fill(el.innerHTML);
+    stage.appendChild(el); confetti(80); sfx.fanfare();
+    $('.map', el).onclick = journey;
+    $('.again', el).onclick = () => { S.shells = 0; S.done = []; save(); updateShells(); journey(); };
+  });
+}
+
+// ---------- confetti ----------
+function confetti(n) {
+  const cols = ['#ff6b6b', '#ffd21f', '#2ec46d', '#35c3ff', '#ff8fc7', '#8e6bff', '#ff9f1c'];
+  for (let i = 0; i < n; i++) {
+    const c = h(`<div class="confetti" style="left:${rand(0, 100)}%;background:${pick(cols)};animation-duration:${rand(1.8, 3.6)}s;animation-delay:${rand(0, .6)}s"></div>`);
+    document.body.appendChild(c); setTimeout(() => c.remove(), 4500);
+  }
+}
+
+// ---------- top bar ----------
+$('#homeBtn').onclick = () => { sfx.click(); S.names.length ? journey() : titleScreen(); };
+$('#sndBtn').onclick = () => { const on = sfx.toggle(); $('#sndBtn').textContent = on ? '🔊' : '🔈'; $('#sndBtn').classList.toggle('off', !on); };
+$('#talkBtn').onclick = () => {
+  narrate = !narrate; $('#talkBtn').classList.toggle('off', !narrate);
+  toast(narrate ? '🗣️ Read-aloud is ON' : '🤫 Read-aloud is OFF', 1500);
+  if (narrate) { const t = $('.bubble .txt', stage) || $('.qtext', stage); if (t) speak(t.innerHTML); } else try { speechSynthesis.cancel(); } catch (e) {}
+};
+$('#talkBtn').classList.add('off');
+document.addEventListener('pointerdown', () => sfx.unlock(), { once: true });
+document.addEventListener('gesturestart', e => e.preventDefault());
+
+updateShells();
+titleScreen();
+</script>
+</body>
+</html>
