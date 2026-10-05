@@ -254,6 +254,7 @@ b.hl{color:var(--coral);}
     <button class="ibtn" id="homeBtn" aria-label="Journey map">🗺️</button>
     <div class="ttl" id="title">Balistidae Quest</div>
     <div id="shells">🐚 0</div>
+    <button class="ibtn" id="fsBtn" aria-label="Full screen">⛶</button>
     <button class="ibtn" id="talkBtn" aria-label="Read aloud">🗣️</button>
     <button class="ibtn" id="sndBtn" aria-label="Sound">🔊</button>
   </div>
@@ -623,7 +624,7 @@ function titleScreen() {
       <div class="bob" style="position:absolute;left:40%;bottom:4%;font-size:clamp(40px,6vw,70px);animation-delay:-2s">🐠</div>
     </div>`);
     stage.appendChild(el);
-    $('.start', el).onclick = () => { sfx.unlock(); sfx.click(); has ? journey() : namesScreen(); };
+    $('.start', el).onclick = () => { sfx.unlock(); sfx.click(); goFullscreen(true); has ? journey() : namesScreen(); };
     if (has) $('.restart', el).onclick = () => { sfx.unlock(); S = { names: [], shells: 0, done: [] }; save(); updateShells(); namesScreen(); };
   });
 }
@@ -1473,6 +1474,26 @@ $('#talkBtn').onclick = () => {
   if (narrate) { const t = $('.bubble .txt', stage) || $('.qtext', stage); if (t) speak(t.innerHTML); } else try { speechSynthesis.cancel(); } catch (e) {}
 };
 $('#talkBtn').classList.add('off');
+
+// ---------- full screen ----------
+const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
+const standalone = navigator.standalone || matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches;
+function goFullscreen(quiet) {
+  const el = document.documentElement, req = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (fsEl() || standalone) return;
+  try {
+    const r = req && req.call(el);
+    if (r && r.catch) r.catch(() => quiet || fsHelp());
+    else if (!req && !quiet) fsHelp();
+  } catch (e) { if (!quiet) fsHelp(); }
+}
+function fsHelp() { toast('📱 For full screen: open the game in Safari, tap Share ⬆️ then <b>Add to Home Screen</b>.', 5000); }
+if (standalone) $('#fsBtn').hidden = true;
+$('#fsBtn').onclick = () => {
+  sfx.click();
+  if (fsEl()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+  else goFullscreen(false);
+};
 document.addEventListener('pointerdown', () => sfx.unlock(), { once: true });
 document.addEventListener('gesturestart', e => e.preventDefault());
 
