@@ -10,6 +10,12 @@ Mozambique holiday. About 30 minutes to play through, in six chapters:
 5. **Mud Island**: find the hidden creatures and beat the tide.
 6. **The Treasure Hunt**: riddles around the lodge unlock the 4-digit chest code.
 
+Every play-through is different. Each question slot draws from a pool of at
+least 5 questions (most have 6–7). Maths questions roll new numbers each time,
+and so do the room-safe code, the buoy sums, the treasure riddles and the
+chest code. Mud Island picks 8 of 13 creatures in random places. The game
+avoids repeating a question until the pool has been used up.
+
 Trig the Triggerfish (the Balistidae family!) guides the players. Players collect 🐚 shells and passport stamps, and finish with a certificate.
 
 ## Playing on the iPad

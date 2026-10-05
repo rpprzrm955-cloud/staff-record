@@ -495,7 +495,7 @@ function ask(q, done) {
   if (q.options) {
     body.className = 'qbody opts';
     if (q.options.length > 3) body.style.gridTemplateColumns = '1fr 1fr';
-    q.options.forEach(o => { const b = h(`<button class="btn opt">${o}</button>`); b.onclick = () => check(o, b); body.appendChild(b); });
+    shuffle(q.options).forEach(o => { const b = h(`<button class="btn opt">${o}</button>`); b.onclick = () => check(o, b); body.appendChild(b); });
   } else {
     body.innerHTML = `<div class="display"><span class="dv">&nbsp;</span>${q.unit ? `<span class="unit">${q.unit}</span>` : ''}</div>
       <div class="pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9, '⌫', 0, '✓'].map(k => `<button class="key ${k === '✓' ? 'ok' : ''}" data-k="${k}">${k}</button>`).join('')}</div>`;
@@ -662,34 +662,216 @@ function namesScreen() {
 /* =========================================================
    CHAPTER 1 — THE GREAT ROAD TRIP (Ballito → Maputo)
    ========================================================= */
+/* =========================================================
+   QUESTION BANK
+   Every challenge picks from a pool (at least 5 per slot), and
+   the maths ones also roll new numbers, so no two games match.
+   Recently asked questions are skipped until the pool runs out.
+   ========================================================= */
+const ri = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const num = n => n.toLocaleString('en-GB');
+const clock = mins => { const h = Math.floor(mins / 60) % 12 || 12, m = mins % 60; return `${h}:${String(m).padStart(2, '0')}`; };
+// numeric multiple-choice: right answer plus distinct nearby wrong ones
+const near = (ans, deltas) => { const o = [ans]; for (const d of shuffle(deltas)) { const v = ans + d; if (v > 0 && !o.includes(v) && o.length < 3) o.push(v); } return o; };
+
+function pickQ(key) {
+  const pool = QB[key];
+  S.qh = S.qh || {};
+  let seen = (S.qh[key] || []).filter(i => i < pool.length);
+  if (seen.length >= pool.length) seen = seen.slice(-1);
+  const i = pick(pool.map((_, j) => j).filter(j => !seen.includes(j)));
+  S.qh[key] = seen.concat(i); save();
+  return typeof pool[i] === 'function' ? pool[i]() : pool[i];
+}
+
+const QB = {
+  // ---- Chapter 1: road trip ----
+  driveMaths: [
+    () => { const s = pick([60, 70, 80, 90]), t = ri(2, 4); return { tag: '🚗 Road Maths', q: `The next stretch of road is <b>${s * t} km</b>. The car travels <b>${s} km every hour</b>. How many hours will it take?`, answer: t, unit: 'hours', hint: `How many ${s}s fit into ${s * t}?` }; },
+    () => { const per = pick([6, 7, 8, 9]), km = pick([200, 300, 400, 500]); return { tag: '⛽ Fuel Maths', q: `The car uses <b>${per} litres</b> of petrol for every <b>100 km</b>. How many litres does it need for <b>${km} km</b>?`, answer: per * km / 100, unit: 'litres', hint: `${km} km is ${km / 100} lots of 100 km. ${km / 100} × ${per} = ?` }; },
+    () => { const e = ri(2, 4); return { tag: '🍟 Snack Maths', q: `All <b>5 kids</b> eat <b>${e} packets</b> of chips on the drive. How many packets is that altogether?`, answer: 5 * e, unit: 'packets', hint: `5 × ${e} = ?` }; },
+    () => { const hr = ri(1, 3), m = pick([15, 20, 30, 45]); return { tag: '⏱️ Time Maths', q: `This part of the drive took <b>${hr} hour${hr > 1 ? 's' : ''} ${m} minutes</b>. How many minutes is that altogether?`, answer: hr * 60 + m, unit: 'minutes', hint: `1 hour = 60 minutes. ${hr} × 60 = ${hr * 60}, then add ${m}.` }; },
+    () => { const t = ri(2, 4), s = pick([70, 80, 90]); return { tag: '🏎️ Speed Maths', q: `We drove <b>${s * t} km</b> in <b>${t} hours</b>. What was our average speed?`, answer: s, unit: 'km/h', hint: `${s * t} ÷ ${t} = ?` }; },
+    () => { const toll = pick([45, 55, 65, 75, 85]); return { tag: '💳 Toll Maths', q: `The toll gate costs <b>R${toll}</b>. {p0} pays with a <b>R100</b> note. How much change does {p0} get?`, answer: 100 - toll, unit: 'Rand', hint: `${toll} + ? = 100` }; },
+  ],
+  wildlife: [
+    { tag: '🦛 Animal Challenge', q: 'iSimangaliso Wetland Park is full of hippos! About how heavy is a grown-up hippo?', options: ['15 kg', '150 kg', '1,500 kg'], answer: '1,500 kg', hint: 'Hippos are HUGE, heavier than a car!', fact: "Hippos can't really swim. They walk and bounce along the bottom of the river!" },
+    { tag: '🐢 Animal Challenge', q: 'Which animal crawls up the beaches of iSimangaliso at night to lay its eggs?', options: ['Leatherback turtle', 'Penguin', 'Ostrich'], answer: 'Leatherback turtle', hint: 'It has a shell and flippers…', fact: 'Leatherbacks are the biggest turtles in the world. They can weigh more than 500 kg!' },
+    { tag: '🗣️ Word Challenge', q: 'The Zulu name <b>iSimangaliso</b> means…', options: ['Miracle and wonder', 'Big river', 'Home of hippos'], answer: 'Miracle and wonder', hint: "It's a very amazing place…", fact: "iSimangaliso was South Africa's first World Heritage Site, in 1999. 🌍" },
+    { tag: '🐊 Animal Challenge', q: 'About how many teeth does a Nile crocodile have?', options: ['6', '66', '666'], answer: '66', hint: 'More than 10, less than 100!', fact: 'When a crocodile loses a tooth, a new one grows in. They can go through thousands in a lifetime!' },
+    { tag: '🦛 Animal Challenge', q: 'Why do hippos spend the hot day lying in the water?', options: ['To keep cool and protect their skin', 'To catch fish', 'To build nests'], answer: 'To keep cool and protect their skin', hint: 'Think about the hot African sun ☀️', fact: 'Hippos make their own pinkish "sunscreen" that oozes out of their skin!' },
+    { tag: '🐋 Animal Challenge', q: 'Which giant animals swim past this coast every winter?', options: ['Humpback whales', 'Polar bears', 'Walruses'], answer: 'Humpback whales', hint: 'They sing songs and jump out of the sea!', fact: 'Humpback whales travel thousands of kilometres from Antarctica to have their babies in warm water. 🐋' },
+  ],
+  border: [
+    { tag: '🛂 Border Challenge', q: "Mozambique's flag is the ONLY national flag in the world with a…", options: ['Fish 🐟', 'Rifle 🔫', 'Elephant 🐘'], answer: 'Rifle 🔫', hint: 'It stands for defending the country…', fact: 'The flag also has a <b>hoe</b> (farming) and a <b>book</b> (education) on a yellow star. 🌟' },
+    { tag: '🛂 Border Challenge', q: 'What is the capital city of Mozambique?', options: ['Maputo', 'Beira', 'Durban'], answer: 'Maputo', hint: "It's where we're driving to!", fact: 'Maputo sits on a big bay, and that bay is where Balistidae is too! 🏝️' },
+    { tag: '🌊 Border Challenge', q: 'Which ocean is on the coast of Mozambique?', options: ['Indian Ocean', 'Atlantic Ocean', 'Pacific Ocean'], answer: 'Indian Ocean', hint: "It's named after a country in Asia…", fact: "Mozambique's coastline is about 2,500 km long, longer than the drive from Cape Town to Johannesburg and back!" },
+    { tag: '🎣 Border Challenge', q: 'Kosi Bay is famous for traditional fish traps. What are they made from?', options: ['Sticks and reeds', 'Plastic bottles', 'Metal cages'], answer: 'Sticks and reeds', hint: 'People have built them the same way for hundreds of years…', fact: 'Local families have used these fish traps at Kosi Bay for generations. Fish swim in but can\'t find the way out!' },
+    { tag: '🇲🇿 Border Challenge', q: 'Which country is NOT a neighbour of Mozambique?', options: ['Namibia', 'Tanzania', 'Malawi'], answer: 'Namibia', hint: "That one is way over on Africa's west coast…", fact: 'Mozambique touches 6 countries: South Africa, eSwatini, Zimbabwe, Zambia, Malawi and Tanzania!' },
+    { tag: '🇲🇿 Border Challenge', q: "The colours of Mozambique's flag are green, black, yellow, white and…", options: ['Red', 'Purple', 'Orange'], answer: 'Red', hint: 'It\'s the colour of the triangle on the left side.', fact: 'Green is for the land, black for Africa, yellow for minerals, white for peace and red for the struggle for freedom.' },
+  ],
+  money: [
+    () => { const r = pick([20, 40, 60, 100, 200]); return { tag: '💰 Money Challenge', q: `Mozambique's money is <b>Meticais (MT)</b>. Pretend <b>R1 = 3½ MT</b>. {p1} swaps <b>R${r}</b>. How many Meticais is that?`, answer: r * 3.5, unit: 'MT', hint: `R${r} × 3 = ${r * 3}… now add half of ${r}.` }; },
+    () => { const r = ri(2, 6) * 10; return { tag: '💰 Money Challenge', q: `Pretend <b>R1 = 3½ MT</b>. A cold drink costs <b>${r * 3.5} MT</b>. How many Rand is that?`, answer: r, unit: 'Rand', hint: `Every 35 MT is R10. How many 35s are in ${r * 3.5}?` }; },
+    () => { const p = pick([30, 40, 50, 60]), n = ri(3, 5); return { tag: '🍍 Market Maths', q: `A pineapple at the market costs <b>${p} MT</b>. How much for <b>${n} pineapples</b>?`, answer: p * n, unit: 'MT', hint: `${n} × ${p} = ?` }; },
+    () => { const c = ri(21, 44) * 10; return { tag: '🧾 Change Maths', q: `Snacks cost <b>${c} MT</b>. {p2} pays with a <b>500 MT</b> note. How much change?`, answer: 500 - c, unit: 'MT', hint: `${c} + ? = 500` }; },
+    () => { const p = pick([25, 35, 45]); return { tag: '🍦 Ice-Cream Maths', q: `Ice creams cost <b>${p} MT</b> each. How much for all <b>5 kids</b>?`, answer: p * 5, unit: 'MT', hint: `5 × ${p} = ?` }; },
+  ],
+  language: [
+    { tag: '🗣️ Language Challenge', q: 'People in Mozambique mostly speak…', options: ['Spanish', 'Portuguese', 'French'], answer: 'Portuguese', hint: 'Mozambique was once ruled by a country next to Spain…', fact: 'Try it! <b>Olá</b> = Hello, <b>Obrigado</b> = Thank you (girls say <b>Obrigada</b>), <b>Tchau</b> = Bye!' },
+    { tag: '🗣️ Language Challenge', q: 'In Portuguese, what does <b>Obrigado</b> mean?', options: ['Thank you', 'Hello', 'Goodbye'], answer: 'Thank you', hint: 'You say it when someone gives you something 🎁', fact: 'Boys say <b>Obrigado</b> and girls say <b>Obrigada</b>!' },
+    { tag: '🗣️ Language Challenge', q: 'What does <b>Olá</b> mean?', options: ['Hello', 'Sorry', 'Yes'], answer: 'Hello', hint: 'It sounds a bit like an English word…', fact: '<b>Bom dia</b> means good morning, and <b>Boa noite</b> means good night. 🌙' },
+    { tag: '🔢 Language Challenge', q: 'How do you count <b>one, two, three</b> in Portuguese?', options: ['Um, dois, três', 'Uno, dos, tres', 'Un, deux, trois'], answer: 'Um, dois, três', hint: 'The other two are Spanish and French!', fact: 'Keep going: quatro (4), cinco (5), seis (6)!' },
+    { tag: '🏖️ Language Challenge', q: 'What does <b>praia</b> mean in Portuguese?', options: ['Beach', 'Bread', 'Boat'], answer: 'Beach', hint: 'Balistidae is right on one! 🏖️', fact: 'And <b>mar</b> means sea. Praia + mar = perfect holiday! 🌊' },
+    { tag: '🐟 Language Challenge', q: 'What does <b>peixe</b> mean in Portuguese?', options: ['Fish', 'Peach', 'Pizza'], answer: 'Fish', hint: 'We catch these on the boat 🎣', fact: '<b>Caranguejo</b> means crab. Try saying that fast! 🦀' },
+    { tag: '☀️ Language Challenge', q: 'What does <b>Bom dia</b> mean?', options: ['Good morning', 'Good luck', 'Good food'], answer: 'Good morning', hint: 'You say it when you wake up ☀️', fact: '<b>Boa tarde</b> is good afternoon and <b>Boa noite</b> is good night.' },
+  ],
+  bridge: [
+    { tag: '🌉 Bridge Challenge', q: 'The Maputo–Katembe Bridge has a middle span of <b>680 metres</b> hanging from giant cables. How far is it to the exact middle?', answer: 340, unit: 'm', hint: 'Halve 680. Half of 600 is 300, half of 80 is…' },
+    { tag: '🌉 Bridge Challenge', q: 'The whole bridge, with its roads, is about <b>3 km</b> long. How many <b>metres</b> is that?', answer: 3000, unit: 'm', hint: '1 km = 1,000 m' },
+    () => { const s = pick([30, 60]); return { tag: '🌉 Bridge Challenge', q: `If a car crosses <b>3 km</b> of bridge at <b>${s} km/h</b>, how many <b>minutes</b> does it take?`, answer: 3 * 60 / s, unit: 'minutes', hint: `At ${s} km/h you go ${s / 60} km every minute.` }; },
+    () => { const sec = pick([2, 3, 4, 5, 6]); return { tag: '🌉 Bridge Challenge', q: `One car drives onto the bridge every <b>${sec} seconds</b>. How many cars in <b>1 minute</b>?`, answer: 60 / sec, unit: 'cars', hint: `60 ÷ ${sec} = ?` }; },
+    { tag: '🌉 Bridge Challenge', q: 'The bridge opened in <b>2018</b>. How many years before <b>2025</b> was that?', answer: 7, unit: 'years', hint: '2025 − 2018 = ?' },
+  ],
+  arrive: [
+    () => { const o = ri(1000, 4999) * 10; return { tag: '🚗 Odometer Challenge', q: `At Ballito the car's odometer read <b>${num(o)} km</b>. We drove <b>510 km</b> to Maputo. What does it read now?`, answer: o + 510, unit: 'km', hint: `${num(o)} + 500 = ${num(o + 500)}. Now add 10 more.` }; },
+    { tag: '🚗 Trip Challenge', q: 'Ballito to Maputo is about <b>510 km</b>. We drive the same way home. How far is that there AND back?', answer: 1020, unit: 'km', hint: '510 + 510 = ?' },
+    { tag: '🚗 Trip Challenge', q: 'Round <b>510 km</b> to the nearest <b>100 km</b>.', answer: 500, unit: 'km', hint: 'Is 510 closer to 500 or 600?' },
+    { tag: '🚗 Trip Challenge', q: 'Our stops were <b>140</b>, <b>90</b>, <b>160</b>, <b>70</b>, <b>40</b> and <b>10 km</b> apart. What is the total?', answer: 510, unit: 'km', hint: '140 + 90 = 230, + 160 = 390… keep going!' },
+    () => { const t = pick([5, 6]); return { tag: '🚗 Trip Challenge', q: `If we drove the <b>510 km</b> in exactly <b>${t} hours</b>, about how fast did we go on average?`, options: near(Math.round(510 / t), [-20, 20, 30]).map(v => v + ' km/h'), answer: Math.round(510 / t) + ' km/h', hint: `510 ÷ ${t} — try ${t} × 80 and ${t} × 90 first.` }; },
+  ],
+  // ---- Chapter 2: Maputo ----
+  maputo: [
+    { tag: '🏙️ Maputo Quiz', q: 'Long ago, Maputo had a different name. What was it?', options: ['Lourenço Marques', 'Cape Town', 'Lisbon'], answer: 'Lourenço Marques', hint: "It's named after a Portuguese explorer!", fact: 'Maputo was called <b>Lourenço Marques</b> until 1976, after a Portuguese trader who explored the bay in the 1500s.' },
+    { tag: '🎨 Culture Quiz', q: 'A <b>capulana</b> is a colourful thing people wear in Mozambique. What is it?', options: ['A hat', 'A cloth wrap', 'A shoe'], answer: 'A cloth wrap', hint: 'It can be a skirt, a baby carrier, or even a towel!', fact: 'Capulanas are bright printed cloths, used as skirts, head wraps, baby slings and beach towels!' },
+    { tag: '💰 Maputo Quiz', q: 'What is the money in Mozambique called?', options: ['Metical', 'Rand', 'Dollar'], answer: 'Metical', hint: 'We swapped money at the border… MT!', fact: 'MT is short for Metical. More than one are called <b>Meticais</b>.' },
+    { tag: '🎉 Maputo Quiz', q: 'In which year did Mozambique become an independent country?', options: ['1975', '1910', '2000'], answer: '1975', hint: 'About 50 years ago…', fact: 'Mozambique celebrates Independence Day on <b>25 June</b> every year. 🎉' },
+    { tag: '🌶️ Food Quiz', q: 'Mozambique is famous for <b>peri-peri</b>. What is it?', options: ['A spicy chilli', 'A sweet fruit', 'A type of fish'], answer: 'A spicy chilli', hint: 'It makes your mouth go HOT! 🔥', fact: 'Peri-peri prawns and peri-peri chicken are famous Mozambican dishes!' },
+    { tag: '🌊 Maputo Quiz', q: 'Maputo Bay opens onto which ocean?', options: ['Indian Ocean', 'Atlantic Ocean', 'Arctic Ocean'], answer: 'Indian Ocean', hint: 'Same ocean as Ballito!', fact: 'Inhaca Island and the Santa Maria peninsula guard the mouth of the bay.' },
+    { tag: '📏 Maputo Quiz', q: "About how long is Mozambique's coastline?", options: ['250 km', '2,500 km', '25,000 km'], answer: '2,500 km', hint: 'Much longer than our 510 km drive!', fact: 'That much coastline means LOTS of beaches, reefs and islands. 🏝️' },
+  ],
+  // ---- Chapter 3: boat ----
+  boatMaths: [
+    () => { const m = pick([15, 30, 45]); return { tag: '⏱️ Speed Challenge', q: `{boat} crosses the bay, <b>40 km</b>, in <b>1 hour</b>. How many km does it travel in <b>${m} minutes</b>?`, answer: 40 * m / 60, unit: 'km', hint: `${m} minutes is ${m === 30 ? 'half' : m === 15 ? 'a quarter' : 'three quarters'} of an hour.`, fact: 'Skipper {skipper} has been driving boats for over 10 years!' }; },
+    { tag: '🛏️ Villa Challenge', q: 'Balistidae has <b>6 suites</b>. Each suite sleeps <b>2 guests</b>. How many guests can stay at once?', answer: 12, unit: 'guests', hint: '6 × 2 = ?', fact: 'Every suite has its own outdoor shower and private deck with views of the bay! 🚿' },
+    { tag: '🚤 Boat Challenge', q: '{boat} can carry <b>12 passengers</b>. Our crew is <b>9 people</b>. How many spare seats?', answer: 3, unit: 'seats', hint: '12 − 9 = ?', fact: 'Everyone wears a life jacket on the boat. Safety first! 🦺' },
+    { tag: '🚤 Boat Challenge', q: '{boat} is a <b>28-foot</b> boat. One foot is about <b>30 cm</b>. About how many cm long is it?', answer: 840, unit: 'cm', hint: '28 × 30 = 28 × 3 × 10', fact: "That's longer than two cars parked end to end! 🚗🚗" },
+    () => { const a = pick([10, 11]), am = pick([0, 30]), wait = (14 * 60) - (a * 60 + am); return { tag: '⏰ Time Challenge', q: `Check-in is at <b>2:00 PM</b>. We arrive at <b>${a}:${am ? '30' : '00'} AM</b>. How long until check-in?`, options: [wait / 60 + ' hours', (wait / 60 + 1) + ' hours', (wait / 60 - 1) + ' hours'].map(s => s.replace('.5', '½')), answer: (wait / 60 + ' hours').replace('.5', '½'), hint: `Count on from ${a}:${am ? '30' : '00'} to 12:00, then to 2:00.`, fact: 'Good news: there is lots to explore while you wait. Kayaks! 🛶' }; },
+  ],
+  trigger: [
+    { tag: '🐟 Fish Fact', q: 'Triggerfish (the Balistidae family!) have a special spine on their back. What does it do?', options: ["Locks them into rock holes so they can't be pulled out", 'Shoots poison darts', 'Plays music'], answer: "Locks them into rock holes so they can't be pulled out", hint: "It works like a 'trigger' that clicks into place…", fact: 'Pull the "trigger" (a smaller spine) and the big one unlocks. That\'s how triggerfish got their name!' },
+    { tag: '🐟 Fish Fact', q: 'How do triggerfish find food hiding in the sand?', options: ['They blow jets of water at it', 'They dig with their tails', 'They sniff like a dog'], answer: 'They blow jets of water at it', hint: 'Imagine a fish with a water pistol 💦', fact: 'They even blow water at sea urchins to flip them over and get to the soft underside!' },
+    { tag: '🐟 Fish Fact', q: 'Triggerfish have very strong teeth. What can they crunch?', options: ['Crab shells and sea urchins', 'Only soft seaweed', 'Nothing, they have no teeth'], answer: 'Crab shells and sea urchins', hint: 'Their teeth are like little nutcrackers!', fact: 'Some big triggerfish can even bite through a snorkeller\'s fin, so give them space! 😬' },
+    { tag: '🐟 Fish Fact', q: "Hawaii's state fish is a triggerfish. What is its very long name?", options: ['Humuhumunukunukuāpuaʻa', 'Bob', 'Aloha-fish'], answer: 'Humuhumunukunukuāpuaʻa', hint: 'It\'s the really, really long one!', fact: 'Try saying it: hoo-moo-hoo-moo-noo-koo-noo-koo-ah-poo-ah-ah! 😂' },
+    { tag: '🐟 Fish Fact', q: 'What is special about a triggerfish\'s eyes?', options: ['Each eye can move on its own', 'They glow in the dark', 'They have four eyes'], answer: 'Each eye can move on its own', hint: 'One can look left while the other looks right 👀', fact: 'That helps them watch out for danger while they eat!' },
+    { tag: '🐟 Fish Fact', q: 'One famous triggerfish is named after an artist because of its crazy colourful pattern. Which one?', options: ['Picasso triggerfish', 'Mona Lisa triggerfish', 'Crayon triggerfish'], answer: 'Picasso triggerfish', hint: 'A famous Spanish painter 🎨', fact: 'Picasso triggerfish live on reefs in the Indian Ocean, including Mozambique!' },
+  ],
+  // ---- Chapter 4: fishing ----
+  measure: [
+    () => { const m = pick([1.2, 1.3, 1.4, 1.5, 1.6, 1.8]), cm = Math.round(m * 100); return { tag: '📏 Measure Challenge', art: '🐟📏', q: `The tuna is <b>${m} metres</b> long. How many <b>centimetres</b> is that?`, answer: cm, unit: 'cm', hint: `1 metre = 100 cm, so ${m} m = ${m} × 100.`, fact: 'Yellowfin tuna can grow over 2 metres long and weigh more than 150 kg!' }; },
+    () => { const kg = pick([18, 22, 25, 30, 35]); return { tag: '⚖️ Weigh Challenge', art: '🐟⚖️', q: `The tuna weighs <b>${kg} kg</b>. How many <b>grams</b> is that?`, answer: kg * 1000, unit: 'g', hint: '1 kg = 1,000 g', fact: 'The biggest yellowfin tuna ever caught weighed almost 200 kg!' }; },
+    () => { const kg = pick([20, 24, 28, 32]), k = pick([2, 4]); return { tag: '⚖️ Weigh Challenge', art: '🐟⚖️', q: `The tuna weighs <b>${kg} kg</b>. Blake weighs about <b>${kg * k} kg</b>. How many tunas would weigh the same as Blake?`, answer: k, unit: 'tunas', hint: `${kg} × ? = ${kg * k}`, fact: 'A yellowfin can swim thousands of kilometres across the ocean in a year!' }; },
+    () => { const cm = pick([120, 130, 140, 150]), r = pick([30, 40]); return { tag: '📏 Measure Challenge', art: '🐟📏', q: `The tuna is <b>${cm} cm</b> long and Oliver's arm span is <b>${cm + r} cm</b>. How much longer is Oliver's arm span?`, answer: r, unit: 'cm', hint: `${cm + r} − ${cm} = ?`, fact: 'Fishermen measure tuna from the tip of the nose to the fork of the tail.' }; },
+    () => { const L = pick([10, 12, 15]); return { tag: '📏 Measure Challenge', art: '🐟📏', q: `In the picture the tuna is <b>${L} cm</b> long. The real tuna is <b>10 times</b> bigger. How long is the real one?`, answer: L * 10, unit: 'cm', hint: `${L} × 10 = ?`, fact: 'Tuna have a special shape like a torpedo so they can zoom through water. 🚀' }; },
+  ],
+  share: [
+    () => { const [who, n] = pick([['the 4 grown-ups ({grownups})', 4], ['the 5 kids', 5], ['all 9 of the crew', 9], ['3 friends', 3]]), e = ri(3, 8); return { tag: '🍣 Sharing Challenge', art: '🍣', q: `The tuna makes <b>${n * e}</b> pieces of sushi, shared equally between ${who}. How many each?`, answer: e, unit: 'pieces', hint: `${n} × ? = ${n * e}`, fact: "Tuna is warm-blooded, unlike most fish. That's why it's such a powerful, fast swimmer!" }; },
+    () => { const s = ri(4, 9); return { tag: '🍽️ Dinner Challenge', art: '🍽️', q: `Chef {chef} serves <b>${s} pieces</b> of tuna to each of the <b>9</b> people in the crew. How many pieces altogether?`, answer: s * 9, unit: 'pieces', hint: `9 × ${s} = ?`, fact: 'Fresh tuna is delicious seared on the braai with a little peri-peri! 🌶️' }; },
+    () => { const n = pick([24, 30, 36, 42]); return { tag: '🍣 Sharing Challenge', art: '🍣', q: `There are <b>${n}</b> pieces of sushi. The 5 kids eat <b>half</b>. How many are left for the grown-ups?`, answer: n / 2, unit: 'pieces', hint: `Half of ${n} = ?`, fact: '<b>Maguro</b> is the Japanese word for tuna sushi. 🍣' }; },
+    () => { const c = pick([3, 4, 5]); return { tag: '🧊 Cooler Challenge', art: '🧊', q: `Each cooler box holds <b>${c} kg</b> of fish. How many cooler boxes for <b>${c * 6} kg</b>?`, answer: 6, unit: 'boxes', hint: `${c} × ? = ${c * 6}`, fact: 'Fish must go on ice straight away to stay fresh! 🧊' }; },
+    () => { const p = pick([3, 4, 5]); return { tag: '🎣 Fishing Challenge', art: '🎣', q: `{boat} has <b>${p}</b> fishing rods out, and each one has <b>2 hooks</b>. How many hooks in the water?`, answer: p * 2, unit: 'hooks', hint: `${p} × 2 = ?`, fact: 'Deep-sea fishermen often troll lures behind the boat while it moves slowly.' }; },
+  ],
+  fishFact: [
+    { tag: '🏎️ Speed Challenge', art: '🐟💨', q: 'A yellowfin tuna can swim about <b>75 km/h</b>. A wahoo can reach about <b>78 km/h</b>. How much faster is the wahoo?', answer: 3, unit: 'km/h', hint: '78 − 75 = ?', fact: "No wonder {dad}'s wahoo got away so fast! 😄" },
+    { tag: '🐟 Fish Fact', art: '🐟', q: 'How did the yellowfin tuna get its name?', options: ['It has bright yellow fins', 'It loves bananas', 'It is scared of everything'], answer: 'It has bright yellow fins', hint: 'Look at the picture of the tuna!', fact: 'It also has a yellow stripe down its side. ✨' },
+    { tag: '🐟 Fish Fact', art: '🐟', q: 'Tuna can never stop swimming. Why?', options: ['They need to swim to breathe', 'They are always late', 'They are scared of sharks'], answer: 'They need to swim to breathe', hint: 'Water must flow over their gills…', fact: 'Even when they sleep, tuna keep swimming slowly!' },
+    { tag: '🐟 Fish Fact', art: '🦷', q: "What is special about a wahoo's teeth?", options: ['They are razor sharp', 'It has no teeth', 'They are made of gold'], answer: 'They are razor sharp', hint: "That's why it can cut through a fishing line! ✂️", fact: 'Fishermen often use wire leaders so a wahoo can\'t bite through the line.' },
+    () => { const st = pick([5, 6, 7]), hrs = pick([4, 6]); return { tag: '⏰ Time Challenge', art: '🎣', q: `A deep-sea fishing trip lasts <b>${hrs} hours</b>. We leave at <b>${st}:00 AM</b>. What time are we back?`, options: [st + hrs, st + hrs + 1, st + hrs - 1].map(t => `${t > 12 ? t - 12 : t}:00 ${t >= 12 ? 'PM' : 'AM'}`), answer: `${st + hrs > 12 ? st + hrs - 12 : st + hrs}:00 ${st + hrs >= 12 ? 'PM' : 'AM'}`, hint: `Count on ${hrs} hours from ${st}:00.`, fact: 'Fishing early in the morning is best. That\'s when the big fish feed!' }; },
+    { tag: '🐟 Fish Fact', art: '🐟', q: 'Tuna are warm-blooded. What does that help them do?', options: ['Swim fast in cold deep water', 'Breathe air', 'Walk on land'], answer: 'Swim fast in cold deep water', hint: 'Warm muscles work better…', fact: 'Most fish are the same temperature as the water around them, but tuna stay warmer!' },
+  ],
+  // ---- Chapter 5: Mud Island ----
+  tide: [
+    () => { const lo = ri(8, 11) * 60 + pick([0, 15, 30, 45]), st = ri(1, 3) * 60 + pick([15, 30, 45]), a = lo + st; return { tag: '🌊 Tide Challenge', q: `Low tide is at <b>${clock(lo)}</b>. You can stay on Mud Island for <b>${Math.floor(st / 60)} hour${st >= 120 ? 's' : ''} ${st % 60} minutes</b>. When must you leave?`, options: [a, a - 30, a + 60].map(clock), answer: clock(a), hint: `Add the hours first, then the ${st % 60} minutes.` }; },
+    () => { const back = ri(12, 15) * 60 + pick([0, 30]), walk = pick([15, 30, 45]); return { tag: '🌊 Tide Challenge', q: `The water covers Mud Island again at <b>${clock(back)}</b>. It takes <b>${walk} minutes</b> to get back to the boat. What is the latest time you can start walking?`, options: [back - walk, back + walk, back - walk - 30].map(clock), answer: clock(back - walk), hint: `Count back ${walk} minutes from ${clock(back)}.` }; },
+    () => { const lo = ri(9, 11), hi = lo + 6; return { tag: '🌊 Tide Challenge', q: `Low tide is at <b>${lo}:00 AM</b>. High tide comes about <b>6 hours</b> later. When is high tide?`, options: [hi, hi - 1, hi + 2].map(t => clock(t * 60) + (t >= 12 ? ' PM' : ' AM')), answer: clock(hi * 60) + (hi >= 12 ? ' PM' : ' AM'), hint: `${lo} + 6 = ${hi}… remember the clock goes past 12!` }; },
+    () => { const c = ri(4, 9); return { tag: '🦀 Crab Count', q: `Kayden counts <b>${c}</b> crabs and Oliver counts <b>${c + 3}</b>. Blake says he counted <b>double</b> what Kayden did. How many did Blake count?`, answer: c * 2, unit: 'crabs', hint: `${c} × 2 = ?` }; },
+    () => { const m = pick([30, 40, 50]); return { tag: '🌊 Tide Challenge', q: `The tide rises about <b>${m} cm</b> every hour. How much does it rise in <b>3 hours</b>?`, answer: m * 3, unit: 'cm', hint: `${m} × 3 = ?` }; },
+  ],
+};
+const TIDE_FACTS = ['Tides go in and out about twice a day, pulled by the Moon! 🌙 Mud Island only appears at low tide.', 'The biggest tides happen at full moon and new moon. They\'re called <b>spring tides</b>. 🌕', 'Mangrove trees can live in salty water. Their roots stick up out of the mud like snorkels! 🌳', 'Sandbanks in Maputo Bay move a little every year as the tides push the sand around.'];
+
+// safe code: random 3 digits, each with a random clue
+function digitClue(d) {
+  return pick([
+    () => { const k = ri(2, 9); return `<b>${d + k} − ${k}</b>`; },
+    () => { const k = ri(2, 5); return `<b>${d * k} ÷ ${k}</b>`; },
+    () => { const a = ri(0, d); return `<b>${a} + ${d - a}</b>`; },
+    () => d % 2 === 0 ? `<b>half of ${d * 2}</b>` : `<b>${d * 3} ÷ 3</b>`,
+    () => `the number of legs a crab has (10), take away <b>${10 - d}</b>`,
+    () => `an octopus has 8 arms… ${d >= 8 ? `add <b>${d - 8}</b>` : `take away <b>${8 - d}</b>`}`,
+  ])();
+}
+function safeQ() {
+  const ds = [ri(1, 9), ri(0, 9), ri(0, 9)];
+  return { tag: '🔐 Crack the Code', q: `<ul>${ds.map((d, i) => `<li>${['1st', '2nd', '3rd'][i]} digit: ${digitClue(d)}</li>`).join('')}</ul>What is the 3-digit code?`,
+    answer: Number(ds.join('')), hint: 'Work out each clue one at a time and write the digits in order.', fact: 'Click! The safe opens and there are snacks for everyone! 🍫🍪' };
+}
+
+// boat buoys: random sums each time
+function buoyStep(last) {
+  const t = pick(['mul', 'div', 'half', 'pct', 'add', 'sq', 'sub']);
+  let c, a;
+  if (t === 'mul') { const x = ri(3, 12), y = ri(3, 12); c = `${x} × ${y}`; a = x * y; }
+  if (t === 'div') { const y = ri(3, 9); a = ri(3, 12); c = `${a * y} ÷ ${y}`; }
+  if (t === 'half') { const n = ri(15, 60) * 2; c = `half of ${n}`; a = n / 2; }
+  if (t === 'pct') { const [b, p] = pick([[40, 25], [80, 25], [120, 25], [200, 25], [300, 10], [400, 10], [90, 50], [150, 50]]); c = `${p}% of ${b}`; a = b * p / 100; }
+  if (t === 'add') { const x = ri(25, 75), y = ri(15, 45); c = `${x} + ${y}`; a = x + y; }
+  if (t === 'sq') { const x = ri(2, 6), y = ri(2, 6); c = `${x}×${x} + ${y}×${y}`; a = x * x + y * y; }
+  if (t === 'sub') { const x = ri(60, 150), y = ri(15, 45); c = `${x} − ${y}`; a = x - y; }
+  return { c: `${last ? 'Last one! ' : ''}Sail to the buoy showing <b>${c}</b>`, a, d: near(a, [-1, 1, -10, 10, 2, -2]).slice(1) };
+}
+
+// treasure hunt: riddles for every spot, digit puzzles with random numbers
+const RIDDLES = {
+  pool: `I'm blue but I'm not the sky. You swim in me, but I'm not the sea. What am I?`,
+  kayak: `We wait in a row on the beach in front of the villa. Grab a paddle and we'll float you across the bay! What are we?`,
+  palm: `I have a trunk but I'm not an elephant. I drop coconuts but I'm not a shop. What am I?`,
+  fire: `At night everyone sits around me telling stories and toasting marshmallows. I'm HOT! Where am I?`,
+  lodge: `I have six bedrooms for sleepyheads and a kitchen where Chef {chef} cooks. What am I?`,
+  deck: `This is the best place to watch the sun go down with a cold drink in your hand. Where am I?`,
+  hammock: `I swing between two trees and I'm perfect for a lazy afternoon nap. What am I?`,
+  umbrella: `I'm like a giant hat for the sand. I keep you in the shade at the beach. What am I?`,
+};
+function digitPuzzle(d, k) {
+  const T = [
+    () => { const n = pick([2, 3, 4, 5, 9]); return { q: `Chef {chef} bakes <b>${n * d}</b> cookies for <b>${n}</b> people. Shared equally, how many each?`, hint: `${n} × ? = ${n * d}` }; },
+    () => ({ q: `A coconut falls every <b>2 hours</b>. How many fall in <b>${2 * d} hours</b>?`, hint: `${2 * d} ÷ 2 = ?` }),
+    () => ({ q: `A crab has <b>10 legs</b>. You count <b>${10 * d}</b> crab legs on the beach. How many crabs?`, hint: `${10 * d} ÷ 10 = ?` }),
+    () => { const k = ri(1, 5); return { q: `There were <b>${d + k}</b> kayaks on the beach. <b>${k}</b> went out paddling. How many are left?`, hint: `${d + k} − ${k} = ?` }; },
+    () => ({ q: `An octopus has <b>8 arms</b>. You count <b>${8 * d}</b> arms in the rock pool. How many octopuses?`, hint: `8 × ? = ${8 * d}` }),
+    () => ({ q: `Gabbie finds <b>${3 * d}</b> shells and splits them equally into <b>3</b> buckets. How many in each bucket?`, hint: `3 × ? = ${3 * d}` }),
+    () => ({ q: `Tayla thinks of a number. She doubles it and adds 1, and gets <b>${2 * d + 1}</b>. What was her number?`, hint: `Take away 1 first, then halve it.` }),
+    () => { const k = ri(2, 6); return { q: `Kayden had <b>${d - 1 + k}</b> marshmallows, ate <b>${k}</b>, then found <b>1</b> more. How many now?`, hint: `${d - 1 + k} − ${k} + 1 = ?` }; },
+  ];
+  return (k === undefined ? pick(T) : T[k % T.length])();
+}
+
 const P1 = (lat, lon) => [(lon - 30.45) * 140, (-25.55 - lat) * 140];
 const ROAD = [
   { name: 'Ballito', ll: [-29.54, 31.21], stop: 1, lx: -12, la: 'end' },
   { ll: [-29.2, 31.52] },
-  { name: 'Richards Bay', ll: [-28.78, 32.04], stop: 1, km: 140, lx: -12, la: 'end',
-    q: { q: `Ballito to Richards Bay is about <b>140 km</b>. The car travels <b>70 km every hour</b>. How many hours does it take?`, answer: 2, unit: 'hours',
-      hint: 'How many 70s fit into 140?', fact: 'Richards Bay has one of the biggest coal-export harbours in the whole world! 🚢' } },
+  { name: 'Richards Bay', ll: [-28.78, 32.04], stop: 1, km: 140, lx: -12, la: 'end', qk: ['driveMaths'],
+    fact: () => pick(['Richards Bay has one of the biggest coal-export harbours in the whole world! 🚢', 'The green fields beside the road are sugar cane. KwaZulu-Natal grows most of South Africa\'s sugar! 🌾', 'Ballito, where we started, is named after an old brand of stockings! 🧦']) },
   { ll: [-28.45, 32.18] },
-  { name: 'iSimangaliso', ll: [-28.05, 32.28], stop: 1, km: 90, lx: -12, la: 'end',
-    q: { tag: '🦛 Animal Challenge', q: `iSimangaliso Wetland Park is full of hippos! About how heavy is a grown-up hippo?`, options: ['15 kg', '1,500 kg', '150 kg'], answer: '1,500 kg',
-      hint: "Hippos are HUGE — heavier than a car!", fact: "iSimangaliso was South Africa's first World Heritage Site (1999). It has hippos, crocodiles, turtles and even whales out at sea!" } },
+  { name: 'iSimangaliso', ll: [-28.05, 32.28], stop: 1, km: 90, lx: -12, la: 'end', qk: ['wildlife'] },
   { ll: [-27.45, 32.55] },
-  { name: 'Kosi Bay Border', ll: [-26.87, 32.82], stop: 1, km: 160, lx: 12, la: 'start',
-    qs: [
-      { tag: '🛂 Border Challenge', q: `Welcome to the border! 🇲🇿 Mozambique's flag is the ONLY national flag in the world with a…`, options: ['Fish 🐟', 'Rifle 🔫', 'Elephant 🐘'], answer: 'Rifle 🔫',
-        hint: 'It stands for defending the country…', fact: "The flag also has a <b>hoe</b> (farming) and a <b>book</b> (education) on a yellow star. 🌟" },
-      { tag: '💰 Money Challenge', q: `In Mozambique the money is called <b>Meticais (MT)</b>. Pretend <b>R1 = 3½ MT</b>.<br>{p1} swaps <b>R100</b>. How many Meticais do you get for <b>R100</b>?`, answer: 350, unit: 'MT',
-        hint: 'R100 × 3 = 300… now add half of 100.', fact: 'One Metical is split into 100 centavos — just like one Rand is 100 cents!' },
-    ] },
-  { name: 'Bela Vista', ll: [-26.33, 32.67], stop: 1, km: 70, lx: -12, la: 'end',
-    q: { tag: '🗣️ Language Challenge', q: `People in Mozambique mostly speak…`, options: ['Spanish', 'Portuguese', 'French'], answer: 'Portuguese',
-      hint: 'Mozambique was once ruled by a country next to Spain…', fact: 'Try it! <b>Olá</b> = Hello, <b>Obrigado</b> = Thank you (girls say <b>Obrigada</b>), <b>Tchau</b> = Bye!' } },
-  { name: 'Katembe Bridge', ll: [-26.05, 32.56], stop: 1, km: 40, lx: -12, la: 'end',
-    q: { tag: '🌉 Bridge Challenge', q: `The Maputo–Katembe Bridge has a middle span of <b>680 metres</b> hanging from giant cables. How far is it to the exact middle?`, answer: 340, unit: 'm',
-      hint: 'Halve 680. Half of 600 is 300, half of 80 is…', fact: 'The bridge opened in 2018 and is one of the longest suspension bridges in Africa! 🌉' } },
-  { name: 'Maputo', ll: [-25.96, 32.58], stop: 1, km: 10, lx: 12, la: 'start',
-    q: { tag: '🚗 Odometer Challenge', q: `At Ballito the car's odometer read <b>12,340 km</b>. We drove <b>510 km</b> to Maputo. What does it read now?`, answer: 12850, unit: 'km',
-      hint: '12,340 + 500 = 12,840. Now add 10 more.', fact: 'Maputo is the capital city of Mozambique — about 1 million people live there! 🏙️' } },
+  { name: 'Kosi Bay Border', ll: [-26.87, 32.82], stop: 1, km: 160, lx: 12, la: 'start', qk: ['border', 'money'],
+    fact: () => pick(['One Metical is split into 100 centavos, just like one Rand is 100 cents!', 'Market sellers in Mozambique often let you bargain for a better price. 🛍️']) },
+  { name: 'Bela Vista', ll: [-26.33, 32.67], stop: 1, km: 70, lx: -12, la: 'end', qk: ['language'] },
+  { name: 'Katembe Bridge', ll: [-26.05, 32.56], stop: 1, km: 40, lx: -12, la: 'end', qk: ['bridge'],
+    fact: () => pick(['The bridge opened in 2018 and is one of the longest suspension bridges in Africa! 🌉', 'Before the bridge, people crossed the bay to Katembe on a slow ferry. ⛴️']) },
+  { name: 'Maputo', ll: [-25.96, 32.58], stop: 1, km: 10, lx: 12, la: 'start', qk: ['arrive'],
+    fact: () => 'Maputo is the capital city of Mozambique. About 1 million people live there! 🏙️' },
 ];
 
 function chRoad() {
@@ -767,7 +949,8 @@ function chRoad() {
         } else { go.disabled = false; go.classList.add('pulse'); }
       };
       toast(`📍 Arrived at <b>${r.name}</b>!`);
-      later(() => r.qs ? askAll(r.qs, after) : r.q ? ask(r.q, after) : after(), 600);
+      const qs = (r.qk || []).map(k => { const q = pickQ(k); return q.fact || !r.fact ? q : { ...q, fact: r.fact() }; });
+      later(() => qs.length ? askAll(qs, after) : after(), 600);
     };
     go.onclick = () => { go.classList.remove('pulse'); drive(); };
     story([
@@ -830,15 +1013,9 @@ function chHotel() {
     const safePuzzle = () => {
       el.appendChild(h(`<div style="font-size:clamp(90px,16vw,170px)" class="bob">🔐</div>`));
       story([`Uh-oh! The snacks are locked in the <b class="hl">room safe</b> 🍫 and nobody remembers the code!`, `Luckily there's a note with three clues. Let's crack it!`], () =>
-        ask({ tag: '🔐 Crack the Code', q: `<ul><li>1st digit: a crab has <b>10 legs</b>. Divide by 5.</li><li>2nd digit: <b>3 × 3</b></li><li>3rd digit: <b>7 + 8 − 10</b></li></ul>What is the 3-digit code?`,
-          answer: 295, hint: 'Work out each clue one at a time: 10 ÷ 5, then 3 × 3, then 7 + 8 − 10.', fact: 'Click! The safe opens — snacks for everyone! 🍫🍪' }, () => {
+        ask(safeQ(), () => {
           $$('.bob', el).forEach(n => n.textContent.includes('🔐') && (n.textContent = '🍫'));
-          askAll([
-            { tag: '🏙️ Maputo Quiz', q: 'Long ago, Maputo had a different name. What was it?', options: ['Lourenço Marques', 'Cape Town', 'Lisbon'], answer: 'Lourenço Marques',
-              hint: "It's named after a Portuguese explorer!", fact: 'Maputo was called <b>Lourenço Marques</b> until 1976, after a Portuguese trader who explored the bay in the 1500s.' },
-            { tag: '🎨 Culture Quiz', q: 'A <b>capulana</b> is a colourful thing people wear in Mozambique. What is it?', options: ['A hat', 'A cloth wrap', 'A shoe'], answer: 'A cloth wrap',
-              hint: 'It can be a skirt, a baby carrier, or even a towel!', fact: 'Capulanas are bright printed cloths — used as skirts, head wraps, baby slings and beach towels!' },
-          ], () => story([`What a night! 😴 Tomorrow morning we leave Maputo… <b class="hl">by BOAT!</b> 🚤`], () => finishChapter(1, 'Maputo Night Owl'), 'Collect stamp! ✨'));
+          askAll([pickQ('maputo'), pickQ('maputo')], () => story([`What a night! 😴 Tomorrow morning we leave Maputo… <b class="hl">by BOAT!</b> 🚤`], () => finishChapter(1, 'Maputo Night Owl'), 'Collect stamp! ✨'));
         }));
     };
     story([
@@ -897,14 +1074,7 @@ function chBoat() {
     const place = p => boat.setAttribute('transform', `translate(${p[0]},${p[1]})`);
     place(R[0]);
     const wakePts = [R[0]];
-    const STEPS = [
-      { c: 'Sail to the buoy showing <b>6 × 7</b>', a: 42, d: [36, 48] },
-      { c: 'Sail to the buoy showing <b>81 ÷ 9</b>', a: 9, d: [8, 7] },
-      { c: 'Sail to <b>half of 150</b>', a: 75, d: [50, 70] },
-      { c: 'Sail to <b>25% of 200</b>', a: 50, d: [25, 40] },
-      { c: 'Sail to <b>3×3 + 4×4</b>', a: 25, d: [49, 12] },
-      { c: 'Last one! Sail to <b>1000 − 999 + 99</b>', a: 100, d: [98, 101] },
-    ];
+    const STEPS = Array.from({ length: 6 }, (_, i) => buoyStep(i === 5));
     let step = 0, tries = 0;
     const show = () => {
       const s = STEPS[step], target = R[step + 1];
@@ -949,14 +1119,7 @@ function chBoat() {
         { img: 'lodge', text: `Land ahoy! You made it to <b class="hl">Balistidae</b>, on the western tip of the <b class="hl">Santa Maria peninsula</b>! 🏝️` },
         { img: 'deck', text: `A beach villa hidden in the dune forest, with a sundowner deck, a pool and a fire pit. Chef <b class="hl">{chef}</b> is already cooking peri-peri prawns! 🦐🌶️` },
         `And it's named after MY fish family! 😎`,
-      ], () => askAll([
-        { tag: '⏱️ Speed Challenge', q: '{boat} crosses the bay — <b>40 km</b> — in <b>1 hour</b>. How many km does it travel in <b>15 minutes</b>?', answer: 10, unit: 'km',
-          hint: '15 minutes is a quarter of an hour. What is a quarter of 40?', fact: 'Boat speed is often measured in <b>knots</b>. 1 knot is about 1.85 km per hour. Skipper {skipper} has been driving boats for over 10 years!' },
-        { tag: '🛏️ Villa Challenge', q: 'Balistidae has <b>6 suites</b>. Each suite sleeps <b>2 guests</b>. How many guests can stay at once?', answer: 12, unit: 'guests',
-          hint: '6 × 2 = ?', fact: 'Every suite has its own outdoor shower and private deck with views of the bay! 🚿' },
-        { tag: '🐟 Fish Fact', q: 'Triggerfish (the Balistidae family!) have a special spine on their back. What does it do?', options: ['Locks them into rock holes so they can\'t be pulled out', 'Shoots poison darts', 'Plays music'], answer: 'Locks them into rock holes so they can\'t be pulled out',
-          hint: "It works like a 'trigger' that clicks into place…", fact: 'Pull the "trigger" (a smaller spine) and the big one unlocks — that\'s how triggerfish got their name!' },
-      ], () => finishChapter(2, 'Captain of the Bay'))), 900);
+      ], () => askAll([pickQ('boatMaths'), pickQ('trigger')], () => finishChapter(2, 'Captain of the Bay'))), 900);
     };
     story([
       { img: 'boat', text: `Good morning! ☀️ Today we leave Maputo on <b class="hl">{boat}</b>, the lodge's boat, with skipper <b class="hl">{skipper}</b>! 🚤` },
@@ -1111,14 +1274,7 @@ function chFish() {
       stage.appendChild(ov);
       $('.btn', ov).onclick = () => {
         sfx.click(); ov.remove();
-        askAll([
-          { tag: '📏 Measure Challenge', art: '🐟📏', q: 'The tuna is <b>1.5 metres</b> long. How many <b>centimetres</b> is that?', answer: 150, unit: 'cm',
-            hint: '1 metre = 100 cm. So 1.5 m = 100 + half of 100…', fact: 'Yellowfin tuna can grow over 2 metres long and weigh more than 150 kg!' },
-          { tag: '⚖️ Sharing Challenge', art: '🍣', q: 'The tuna gives <b>36</b> pieces of sushi. They are shared equally between the <b>4</b> grown-ups ({grownups}). How many each?', answer: 9,
-            hint: '4 × ? = 36', fact: "Tuna is warm-blooded, unlike most fish — that's why it's such a powerful, fast swimmer!" },
-          { tag: '🏎️ Speed Challenge', art: '🐟💨', q: `A yellowfin tuna can swim about <b>75 km/h</b>. A wahoo can reach about <b>78 km/h</b>. How much faster is the wahoo?`, answer: 3, unit: 'km/h',
-            hint: '78 − 75 = ?', fact: `No wonder ${FAMILY.dad}'s wahoo got away so fast! 😄` },
-        ], () => finishChapter(3, 'Deep-Sea Champion'));
+        askAll([pickQ('measure'), pickQ('share'), pickQ('fishFact')], () => finishChapter(3, 'Deep-Sea Champion'));
       };
     },
     lose() {
@@ -1135,16 +1291,24 @@ function chFish() {
 function chMud() {
   scene(() => {
     setTitle('🦀 Chapter 5: Mud Island');
-    const ITEMS = [
-      { e: '🦀', x: 18, y: 58, f: 'Fiddler crab! 🦀 Boys have one GIANT claw that they wave to show off.' },
-      { e: '🦩', x: 84, y: 40, f: 'Flamingo! 🦩 They are pink because of the tiny shrimp and algae they eat.' },
-      { e: '🐚', x: 46, y: 78, f: 'Cowrie shell! 🐚 Long ago cowrie shells were used as money in parts of Africa.' },
-      { e: '⭐', x: 64, y: 88, f: 'Sea star! ⭐ A starfish can grow back a lost arm!' },
-      { e: '🐢', x: 92, y: 74, f: 'Sea turtle! 🐢 Loggerhead and leatherback turtles lay eggs on the Santa Maria beaches — you might even see hatchlings!' },
-      { e: '🦐', x: 34, y: 42, f: 'Prawn! 🦐 Maputo Bay is a nursery where millions of baby prawns grow up.' },
-      { e: '🐙', x: 72, y: 62, f: 'Octopus! 🐙 It has THREE hearts and blue blood!' },
-      { e: '🐟', x: 8, y: 86, f: 'Mudskipper! 🐟 A fish that walks on mud using its fins, and breathes through its skin!' },
+    const CREATURES = [
+      { e: '🦀', f: 'Fiddler crab! 🦀 Boys have one GIANT claw that they wave to show off.' },
+      { e: '🦩', f: 'Flamingo! 🦩 They are pink because of the tiny shrimp and algae they eat.' },
+      { e: '🐚', f: 'Cowrie shell! 🐚 Long ago cowrie shells were used as money in parts of Africa.' },
+      { e: '⭐', f: 'Sea star! ⭐ A starfish can grow back a lost arm!' },
+      { e: '🐢', f: 'Sea turtle! 🐢 Loggerhead and leatherback turtles lay eggs on the Santa Maria beaches. You might even see hatchlings!' },
+      { e: '🦐', f: 'Prawn! 🦐 Maputo Bay is a nursery where millions of baby prawns grow up.' },
+      { e: '🐙', f: 'Octopus! 🐙 It has THREE hearts and blue blood!' },
+      { e: '🐟', f: 'Mudskipper! 🐟 A fish that walks on mud using its fins, and breathes through its skin!' },
+      { e: '🐡', f: 'Pufferfish! 🐡 It gulps water to blow itself up like a spiky balloon.' },
+      { e: '🦑', f: 'Squid! 🦑 It squirts a cloud of ink to escape from danger.' },
+      { e: '🪼', f: 'Jellyfish! 🪼 It has no brain, no heart and no bones!' },
+      { e: '🦞', f: 'Crayfish! 🦞 Chef Jabulani cooks these fresh for dinner at Balistidae.' },
+      { e: '🐬', f: 'Dolphin! 🐬 Dolphins visit Maputo Bay and sometimes swim right up to boats.' },
     ];
+    const ITEMS = shuffle(CREATURES).slice(0, 8);
+    shuffle([[18, 58], [84, 40], [46, 78], [64, 86], [92, 74], [34, 42], [72, 62], [8, 86], [52, 48], [24, 74], [88, 58], [60, 38], [40, 62], [12, 44]])
+      .slice(0, 8).forEach(([x, y], i) => { ITEMS[i] = { ...ITEMS[i], x, y }; });
     const el = h(`<div class="full mud">
       <div class="mangrove" style="left:1%;top:14%">🌳</div><div class="mangrove" style="left:12%;top:18%">🌿</div><div class="mangrove" style="right:2%;top:12%">🌳</div>
       <div style="position:absolute;right:30%;top:4%;font-size:40px" class="bob">🚤</div>
@@ -1160,8 +1324,7 @@ function chMud() {
         b.classList.add('found'); t.classList.add('got'); found++;
         sfx.good(); addShells(3); toast(it.f, 3200); speak(it.f);
         if (found === ITEMS.length) later(() => story([`You found ALL the Mud Island creatures! 🎉 You're a real marine biologist!`, `But wait… the <b class="hl">tide</b> is coming back in! 🌊`], () =>
-          ask({ tag: '🌊 Tide Challenge', q: 'Low tide was at <b>10:15</b>. You can stay on Mud Island for <b>2 hours 30 minutes</b>. When must you leave?', options: ['12:15', '12:45', '1:15'], answer: '12:45',
-            hint: '10:15 + 2 hours = 12:15. Then add 30 more minutes…', fact: 'Tides go in and out about twice a day, pulled by the Moon! 🌙 Mud Island only appears at low tide.' },
+          ask({ ...pickQ('tide'), fact: pick(TIDE_FACTS) },
             () => finishChapter(4, 'Mud Island Ranger')), 'Uh oh! ⏰'), 1800);
       };
       el.appendChild(b);
@@ -1195,16 +1358,11 @@ function chTreasure() {
       hammock: { ic: '🪢', nm: 'Hammock', x: 62, y: 84 },
       umbrella: { ic: '⛱️', nm: 'Beach', x: 90, y: 50 },
     };
-    const CLUES = [
-      { spot: 'pool', r: `I'm blue but I'm not the sky. You swim in me, but I'm not the sea. What am I?`,
-        q: { q: 'Clue digit! A square pool has how many <b>sides</b>… minus <b>0</b>? (Easy one!)', answer: 4, hint: 'Count the sides of a square.' } },
-      { spot: 'kayak', r: `We wait in a row on the beach in front of the villa. Grab a paddle and we'll float you across the bay! What are we?`,
-        q: { q: 'Clue digit! On the beach there are <b>5 kayaks</b> and <b>2 SUPs</b> (stand-up paddleboards). How many altogether?', answer: 7, hint: '5 + 2 = ?' } },
-      { spot: 'palm', r: `I have a trunk but I'm not an elephant. I drop coconuts but I'm not a shop. What am I?`,
-        q: { q: 'Clue digit! A coconut falls every <b>2 hours</b>. How many fall in <b>18 hours</b>?', answer: 9, hint: '18 ÷ 2 = ?' } },
-      { spot: 'fire', r: `At night everyone sits around me telling stories and toasting marshmallows. I'm HOT! Where am I?`,
-        q: { q: 'Clue digit! Chef {chef} brings <b>54</b> marshmallows for the <b>9</b> of you (5 kids + 4 grown-ups). Shared equally, how many each?', answer: 6, hint: '9 × ? = 54' } },
-    ];
+    const kinds = shuffle([0, 1, 2, 3, 4, 5, 6, 7]);
+    const CLUES = shuffle(Object.keys(SPOTS)).slice(0, 4).map((spot, i) => {
+      const d = ri(1, 9);
+      return { spot, r: fill(RIDDLES[spot]), q: { ...digitPuzzle(d, kinds[i]), answer: d } };
+    });
     const CODE = CLUES.map(c => c.q.answer).join('');
     const el = h(`<div class="full parch"><div class="tmap"></div>
       <svg class="full" viewBox="0 0 100 100" preserveAspectRatio="none" style="width:100%;height:100%">
