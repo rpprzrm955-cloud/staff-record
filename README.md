@@ -22,19 +22,15 @@ Trig the Triggerfish (the Balistidae family!) guides the players. Players collec
 
 It's a single web page (`index.html`) with no build step and no install.
 
-1. Host the folder anywhere (or open the private Artifact link).
+1. Open https://rpprzrm955-cloud.github.io/staff-record/ in Safari.
 2. Open it in Safari → Share → **Add to Home Screen**. It then launches full-screen like an app.
 
 Progress is saved on the device. 🗣️ in the top bar turns on read-aloud.
 
 ## Family photos
 
-The kids' avatars and family photos are **not** committed (see `.gitignore`)
-because this repository is public. The game works without them and shows
-cartoon placeholders instead. To add them, drop the files into `assets/`:
-
-`kid-kayden.png`, `kid-oliver.png`, `kid-blake.png`, `kid-tayla.png`,
-`kid-gabbie.png`, `oliver-fishing.jpg`, `oliver-tuna.jpg`, `boat-ride.jpg`,
-`girls-boat.jpg`, `crew-maputo.jpg`
+The kids' avatars and family photos are in `assets/` and are published with
+the game (this was the family's choice). If a photo file is missing, the
+game shows a cartoon placeholder instead.
 
 Names, the boat, skipper and chef are set in the `FAMILY` block at the top of the script in `index.html`.
